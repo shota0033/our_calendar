@@ -1,7 +1,7 @@
 // カレンダーと予定の読み込み・保存、オフライン用のキャッシュ
-import { CONFIG } from './config.js';
-import * as api from './api.js';
-import * as D from './dates.js';
+import { CONFIG } from './config.js?v=5';
+import * as api from './api.js?v=5';
+import * as D from './dates.js?v=5';
 
 const KEY_CALENDARS = 'oc.cache.calendars';
 const KEY_EVENTS = 'oc.cache.events';
@@ -95,8 +95,12 @@ function sortEvents(events) {
     a.title.localeCompare(b.title, 'ja'));
 }
 
+// 直近の読み込みで失敗したカレンダー（画面に知らせるため）
+export let loadErrors = [];
+
 // fromKey 以上 toKey 未満の日付に重なる予定を全カレンダーから読み込む
 export async function loadEvents(fromKey, toKey) {
+  const errors = [];
   const timeMin = D.startOfDayIso(fromKey);
   const timeMax = D.startOfDayIso(toKey);
   const results = await Promise.all(calendars.map(async (cal) => {
@@ -109,9 +113,11 @@ export async function loadEvents(fromKey, toKey) {
       // 1つのカレンダーが読めなくても他は表示する。ログインや通信の問題は呼び出し側へ
       if (err.auth || err.network) throw err;
       console.warn('カレンダーを読み込めませんでした', cal.name, err);
+      errors.push(`${cal.name}（${err.message}）`);
       return [];
     }
   }));
+  loadErrors = errors;
   const events = sortEvents(results.flat());
   cacheEvents(fromKey, toKey, events);
   return events;

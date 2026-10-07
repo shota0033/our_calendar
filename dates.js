@@ -83,7 +83,7 @@ export function formatShort(key) {
 //   ocDone: '1'（タスク完了）
 //   ocPersons: 'cat' / 'fish' / 'cat,fish'（誰の予定か）
 // ocPersons がない予定（メールから追加したものなど）は、入っているカレンダーで誰の予定かを決める。
-export function normalizeEvent(raw, calendar, knownPersons) {
+export function normalizeEvent(raw, calendar, knownPersons = []) {
   const allDay = !!raw.start?.date;
   let startKey, endKey, startMs, endMs;
   if (allDay) {

@@ -1,10 +1,10 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js';
-import * as auth from './auth.js';
-import * as store from './store.js';
-import * as D from './dates.js';
-import * as form from './form.js';
-import { h, $ } from './dom.js';
+import { CONFIG } from './config.js?v=5';
+import * as auth from './auth.js?v=5';
+import * as store from './store.js?v=5';
+import * as D from './dates.js?v=5';
+import * as form from './form.js?v=5';
+import { h, $ } from './dom.js?v=5';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -117,7 +117,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=5').catch((err) => console.warn(err));
   }
 }
 
@@ -220,10 +220,12 @@ async function refresh({ reloadCalendars = false, quiet = false } = {}) {
     // 定期読み込みで何も変わっていなければ、描き直さない（画面のちらつきを防ぐ）
     const changed = !quiet || state.offline || state.needsLogin || state.error ||
       JSON.stringify(events) !== JSON.stringify(state.events);
+    const loadError = store.loadErrors.length
+      ? `読み込めなかったカレンダーがあります：${store.loadErrors.join('、')}` : '';
     state.events = events;
     state.offline = false;
     state.needsLogin = false;
-    state.error = '';
+    if (state.error !== loadError) { state.error = loadError; render(); return; }
     if (changed) render();
   } catch (err) {
     if (seq === state.loadSeq && !(quiet && err.network)) handleError(err);
