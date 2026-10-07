@@ -1,10 +1,10 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=5';
-import * as auth from './auth.js?v=5';
-import * as store from './store.js?v=5';
-import * as D from './dates.js?v=5';
-import * as form from './form.js?v=5';
-import { h, $ } from './dom.js?v=5';
+import { CONFIG } from './config.js?v=6';
+import * as auth from './auth.js?v=6';
+import * as store from './store.js?v=6';
+import * as D from './dates.js?v=6';
+import * as form from './form.js?v=6';
+import { h, $ } from './dom.js?v=6';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -117,7 +117,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=5').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=6').catch((err) => console.warn(err));
   }
 }
 
@@ -201,9 +201,16 @@ async function refresh({ reloadCalendars = false, quiet = false } = {}) {
   const seq = ++state.loadSeq;
   const [from, to] = currentRange();
   if (!quiet) {
-    const cached = store.cachedEvents(from, to);
-    state.events = cached || [];
-    render();
+    state.events = store.cachedEvents(from, to) || [];
+    try {
+      render();
+    } catch (err) {
+      // キャッシュが壊れていても、Googleからの読み込みは続ける
+      console.warn('キャッシュを表示できませんでした', err);
+      store.clearCache();
+      state.events = [];
+      render();
+    }
   }
 
   if (!auth.getToken()) { handleNoToken(); return; }
