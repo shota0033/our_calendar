@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Our Calendar</title>
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1b1d22" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="カレンダー">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <!-- ログイン画面 -->
+  <section id="login-screen" class="login" hidden>
+    <img src="icons/icon.svg" alt="" class="login-icon">
+    <h1>Our Calendar</h1>
+    <p id="login-message" class="login-message"></p>
+    <button id="login-btn" class="btn primary large" type="button">Googleでログイン</button>
+  </section>
+
+  <!-- メイン画面 -->
+  <div id="app" hidden>
+    <header class="topbar">
+      <div class="nav">
+        <button id="prev-btn" class="icon-btn" type="button" aria-label="前の月">‹</button>
+        <h1 id="title" class="title"></h1>
+        <button id="next-btn" class="icon-btn" type="button" aria-label="次の月">›</button>
+      </div>
+      <div class="actions">
+        <button id="today-btn" class="btn" type="button">今日</button>
+        <div class="seg" role="tablist">
+          <button type="button" data-view="month" role="tab">月</button>
+          <button type="button" data-view="list" role="tab">一覧</button>
+        </div>
+        <button id="menu-btn" class="icon-btn" type="button" aria-label="メニュー">⋯</button>
+      </div>
+      <div id="loading" class="loading" hidden></div>
+    </header>
+
+    <div id="banner" class="banner" hidden></div>
+    <main id="main"></main>
+    <button id="add-btn" class="fab" type="button" aria-label="予定を追加">＋</button>
+  </div>
+
+  <!-- 1日の予定 -->
+  <dialog id="day-dialog" class="sheet">
+    <div class="sheet-head">
+      <h2 id="day-title"></h2>
+      <button class="icon-btn" type="button" data-close aria-label="閉じる">×</button>
+    </div>
+    <div id="day-events" class="day-events"></div>
+    <button id="day-add-btn" class="btn primary block" type="button">この日に予定を追加</button>
+  </dialog>
+
+  <!-- 予定の追加・編集 -->
+  <dialog id="event-dialog" class="sheet">
+    <form id="event-form" method="dialog" novalidate>
+      <div class="sheet-head">
+        <h2 id="event-dialog-title"></h2>
+        <button class="icon-btn" type="button" data-close aria-label="閉じる">×</button>
+      </div>
+      <label class="field">
+        <span>タイトル</span>
+        <input name="title" type="text" autocomplete="off" enterkeyhint="done">
+      </label>
+      <label class="field">
+        <span>カレンダー</span>
+        <select name="calendarId"></select>
+      </label>
+      <label class="check">
+        <input name="allDay" type="checkbox"> 終日
+      </label>
+      <div class="field-row">
+        <label class="field">
+          <span>開始</span>
+          <input name="startKey" type="date" required>
+        </label>
+        <label class="field time">
+          <span>&nbsp;</span>
+          <input name="startTime" type="time" step="300">
+        </label>
+      </div>
+      <div class="field-row">
+        <label class="field">
+          <span>終了</span>
+          <input name="endKey" type="date" required>
+        </label>
+        <label class="field time">
+          <span>&nbsp;</span>
+          <input name="endTime" type="time" step="300">
+        </label>
+      </div>
+      <label class="field">
+        <span>メモ</span>
+        <textarea name="description" rows="4"></textarea>
+      </label>
+      <p id="event-note" class="note" hidden></p>
+      <p id="event-error" class="error" hidden></p>
+      <div class="form-actions">
+        <button id="delete-btn" class="btn danger" type="button">削除</button>
+        <span class="spacer"></span>
+        <button class="btn" type="button" data-close>キャンセル</button>
+        <button id="save-btn" class="btn primary" type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- メニュー -->
+  <dialog id="menu-dialog" class="sheet">
+    <div class="sheet-head">
+      <h2>メニュー</h2>
+      <button class="icon-btn" type="button" data-close aria-label="閉じる">×</button>
+    </div>
+    <p id="menu-account" class="muted"></p>
+    <h3 class="menu-heading">カレンダー</h3>
+    <ul id="menu-calendars" class="legend"></ul>
+    <div class="form-actions">
+      <button id="reload-btn" class="btn" type="button">再読み込み</button>
+      <span class="spacer"></span>
+      <button id="logout-btn" class="btn danger" type="button">ログアウト</button>
+    </div>
+  </dialog>
+</body>
+</html>
