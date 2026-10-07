@@ -1,11 +1,11 @@
 // カレンダーと予定の読み込み・保存、オフライン用のキャッシュ
-import { CONFIG } from './config.js?v=6';
-import * as api from './api.js?v=6';
-import * as D from './dates.js?v=6';
+import { CONFIG } from './config.js?v=7';
+import * as api from './api.js?v=7';
+import * as D from './dates.js?v=7';
 
 // キャッシュの形式を変えたら CACHE_SCHEMA を上げる。古い形式のキャッシュは読まずに捨てる
 // （古い形式の予定を表示しようとして画面が止まるのを防ぐため）。
-const CACHE_SCHEMA = 2;
+const CACHE_SCHEMA = 3;
 const KEY_CALENDARS = `oc.cache.v${CACHE_SCHEMA}.calendars`;
 const KEY_EVENTS = `oc.cache.v${CACHE_SCHEMA}.events`;
 const MAX_CACHED_RANGES = 8;
@@ -107,6 +107,12 @@ function sortEvents(events) {
     a.title.localeCompare(b.title, 'ja'));
 }
 
+// 表示しない古い予定か（アプリの表示から外すだけで、Googleカレンダーからは削除しない）
+function isHiddenGoogleEvent(ev, cal) {
+  const before = CONFIG.hideGoogleEventsBefore;
+  return !!before && !ev.appFormat && !cal.holiday && ev.endKey < before;
+}
+
 // 直近の読み込みで失敗したカレンダー（画面に知らせるため）
 export let loadErrors = [];
 
@@ -120,7 +126,8 @@ export async function loadEvents(fromKey, toKey) {
       const items = await api.listEvents(cal.id, timeMin, timeMax, CONFIG.timeZone);
       return items
         .filter((e) => e.status !== 'cancelled' && e.start)
-        .map((e) => D.normalizeEvent(e, cal, PERSONS));
+        .map((e) => D.normalizeEvent(e, cal, PERSONS))
+        .filter((ev) => !isHiddenGoogleEvent(ev, cal));
     } catch (err) {
       // 1つのカレンダーが読めなくても他は表示する。ログインや通信の問題は呼び出し側へ
       if (err.auth || err.network) throw err;

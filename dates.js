@@ -129,6 +129,7 @@ export function normalizeEvent(raw, calendar, knownPersons = []) {
     kind,
     done: shared.ocDone === '1',
     persons,
+    appFormat: !!shared.ocKind, // アプリで作った（またはアプリ形式に変えた）予定か
     recurring: !!raw.recurringEventId,
     htmlLink: raw.htmlLink || '',
   };
