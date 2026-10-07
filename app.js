@@ -61,7 +61,7 @@ function init() {
   const result = auth.handleRedirect();
   restoreView();
   bindUi();
-  form.initForm({ onSaved: () => refresh(), onSaveError: handleSaveError });
+  form.initForm({ onSaved: showSaved, onSaveError: handleSaveError });
   registerServiceWorker();
 
   if (CONFIG.clientId.startsWith('YOUR_')) {
@@ -484,6 +484,16 @@ function openEvent(ev) {
 
 function closeDayDialog() {
   if ($('#day-dialog').open) $('#day-dialog').close();
+}
+
+// 保存したら、その予定が見える月に移動して読み込み直す
+function showSaved(dayKey) {
+  if (dayKey && state.view === 'month' && !dayKey.startsWith(state.month.slice(0, 7))) {
+    const { y, m } = D.parts(dayKey);
+    state.month = D.monthKey(y, m);
+    saveView();
+  }
+  refresh();
 }
 
 function handleSaveError(err) {

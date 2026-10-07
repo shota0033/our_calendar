@@ -1,7 +1,7 @@
-﻿// アプリ本体のファイルをキャッシュして、オフラインでも起動できるようにする。
+// アプリ本体のファイルをキャッシュして、オフラインでも起動できるようにする。
 // 予定のデータ（Google API）はここでは扱わない（store.js がブラウザ内に保存する）。
 // ファイルを更新したら VERSION を上げる。
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = `our-calendar-${VERSION}`;
 const FILES = [
   './',
@@ -41,7 +41,10 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET' || new URL(request.url).origin !== location.origin) return;
   event.respondWith(
-    fetch(request)
+    // ブラウザのHTTPキャッシュ（GitHub Pagesは10分）を使わず、毎回サーバーに更新を確認する。
+    // 古いファイルと新しいファイルが混ざって動くのを防ぐため。
+    // ページ遷移のリクエストはオプション付きで作り直せないので、URLで取り直す
+    fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' })
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();

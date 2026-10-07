@@ -324,7 +324,7 @@ async function submit(e) {
       descriptionChanged: ctx.mode === 'new' || f.description !== ctx.initialDescription,
     });
     closeForm();
-    hooks.onSaved();
+    hooks.onSaved(f.startKey);
   } catch (err) {
     setBusy(false);
     hooks.onSaveError(err);
