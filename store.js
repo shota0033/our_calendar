@@ -1,10 +1,13 @@
 // カレンダーと予定の読み込み・保存、オフライン用のキャッシュ
-import { CONFIG } from './config.js?v=5';
-import * as api from './api.js?v=5';
-import * as D from './dates.js?v=5';
+import { CONFIG } from './config.js?v=6';
+import * as api from './api.js?v=6';
+import * as D from './dates.js?v=6';
 
-const KEY_CALENDARS = 'oc.cache.calendars';
-const KEY_EVENTS = 'oc.cache.events';
+// キャッシュの形式を変えたら CACHE_SCHEMA を上げる。古い形式のキャッシュは読まずに捨てる
+// （古い形式の予定を表示しようとして画面が止まるのを防ぐため）。
+const CACHE_SCHEMA = 2;
+const KEY_CALENDARS = `oc.cache.v${CACHE_SCHEMA}.calendars`;
+const KEY_EVENTS = `oc.cache.v${CACHE_SCHEMA}.events`;
 const MAX_CACHED_RANGES = 8;
 export const PERSONS = Object.keys(CONFIG.people); // ['cat', 'fish']
 
@@ -42,6 +45,15 @@ function rank(cal) {
   if (cal.holiday) return PERSONS.length + 1;
   return PERSONS.length;
 }
+
+function removeOldCaches() {
+  try {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('oc.cache.') && key !== KEY_CALENDARS && key !== KEY_EVENTS) localStorage.removeItem(key);
+    }
+  } catch { /* 無視 */ }
+}
+removeOldCaches();
 
 export let calendars = load(KEY_CALENDARS) || [];
 
