@@ -75,8 +75,15 @@ export function formatShort(key) {
   return `${m}/${d}`;
 }
 
-// APIの予定を、表示に使う形にそろえる
-export function normalizeEvent(raw, calendar) {
+// APIの予定を、表示に使う形にそろえる。
+// Googleカレンダーはこのアプリのデータ置き場として使い、アプリ独自の情報は
+// extendedProperties.shared に持つ:
+//   ocKind: 'event' | 'task'
+//   ocTime: 'start'（開始だけ）| 'end'（終了だけ）| 'both' | 'due'（タスクの期限時刻）
+//   ocDone: '1'（タスク完了）
+//   ocPersons: 'cat' / 'fish' / 'cat,fish'（誰の予定か）
+// ocPersons がない予定（メールから追加したものなど）は、入っているカレンダーで誰の予定かを決める。
+export function normalizeEvent(raw, calendar, knownPersons) {
   const allDay = !!raw.start?.date;
   let startKey, endKey, startMs, endMs;
   if (allDay) {
@@ -92,11 +99,24 @@ export function normalizeEvent(raw, calendar) {
     // ちょうど0時に終わる予定は、翌日に表示しない
     endKey = endMs > startMs ? keyFromMs(endMs - 1) : startKey;
   }
+
+  const shared = raw.extendedProperties?.shared || {};
+  const kind = shared.ocKind === 'task' ? 'task' : 'event';
+  const summary = raw.summary || '';
+  const tagged = (shared.ocPersons || '').split(',').filter((p) => knownPersons.includes(p));
+  const persons = tagged.length ? tagged : (calendar.person ? [calendar.person] : []);
+  let timeMode = 'none';
+  if (!allDay) {
+    timeMode = ['start', 'end', 'both', 'due'].includes(shared.ocTime)
+      ? shared.ocTime
+      : (endMs === startMs ? 'start' : 'both');
+  }
+
   return {
     id: raw.id,
     calendarId: calendar.id,
-    title: raw.summary || '（タイトルなし）',
-    summary: raw.summary || '',
+    title: summary || '（タイトルなし）',
+    summary,
     description: raw.description || '',
     allDay,
     startKey,
@@ -105,6 +125,10 @@ export function normalizeEvent(raw, calendar) {
     endMs,
     startTime: allDay ? '' : timeFromMs(startMs),
     endTime: allDay ? '' : timeFromMs(endMs),
+    timeMode,
+    kind,
+    done: shared.ocDone === '1',
+    persons,
     recurring: !!raw.recurringEventId,
     htmlLink: raw.htmlLink || '',
   };

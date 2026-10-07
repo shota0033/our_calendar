@@ -35,11 +35,14 @@
       </div>
       <div class="actions">
         <button id="today-btn" class="btn" type="button">今日</button>
-        <div class="seg" role="tablist">
+        <button id="menu-btn" class="icon-btn" type="button" aria-label="メニュー">⋯</button>
+      </div>
+      <div class="subbar">
+        <div id="filters" class="filters"></div>
+        <div class="seg view-seg" role="tablist">
           <button type="button" data-view="month" role="tab">月</button>
           <button type="button" data-view="list" role="tab">一覧</button>
         </div>
-        <button id="menu-btn" class="icon-btn" type="button" aria-label="メニュー">⋯</button>
       </div>
       <div id="loading" class="loading" hidden></div>
     </header>
@@ -59,55 +62,63 @@
     <button id="day-add-btn" class="btn primary block" type="button">この日に予定を追加</button>
   </dialog>
 
-  <!-- 予定の追加・編集 -->
-  <dialog id="event-dialog" class="sheet">
-    <form id="event-form" method="dialog" novalidate>
-      <div class="sheet-head">
-        <h2 id="event-dialog-title"></h2>
+  <!-- 予定・タスクの追加と編集（全画面） -->
+  <dialog id="event-dialog" class="page">
+    <form id="event-form" novalidate>
+      <header class="page-head">
         <button class="icon-btn" type="button" data-close aria-label="閉じる">×</button>
-      </div>
-      <label class="field">
-        <span>タイトル</span>
-        <input name="title" type="text" autocomplete="off" enterkeyhint="done">
-      </label>
-      <label class="field">
-        <span>カレンダー</span>
-        <select name="calendarId"></select>
-      </label>
-      <label class="check">
-        <input name="allDay" type="checkbox"> 終日
-      </label>
-      <div class="field-row">
-        <label class="field">
-          <span>開始</span>
-          <input name="startKey" type="date" required>
-        </label>
-        <label class="field time">
-          <span>&nbsp;</span>
-          <input name="startTime" type="time" step="300">
-        </label>
-      </div>
-      <div class="field-row">
-        <label class="field">
-          <span>終了</span>
-          <input name="endKey" type="date" required>
-        </label>
-        <label class="field time">
-          <span>&nbsp;</span>
-          <input name="endTime" type="time" step="300">
-        </label>
-      </div>
-      <label class="field">
-        <span>メモ</span>
-        <textarea name="description" rows="4"></textarea>
-      </label>
-      <p id="event-note" class="note" hidden></p>
-      <p id="event-error" class="error" hidden></p>
-      <div class="form-actions">
-        <button id="delete-btn" class="btn danger" type="button">削除</button>
-        <span class="spacer"></span>
-        <button class="btn" type="button" data-close>キャンセル</button>
+        <h2 id="event-dialog-title"></h2>
         <button id="save-btn" class="btn primary" type="submit">保存</button>
+      </header>
+      <div class="page-body">
+        <div class="seg kind-seg" role="tablist">
+          <button type="button" data-kind="event" role="tab">予定<small>その日にやること</small></button>
+          <button type="button" data-kind="task" role="tab">タスク<small>その日までにやること</small></button>
+        </div>
+
+        <input name="title" class="title-input" type="text" placeholder="タイトル" autocomplete="off" enterkeyhint="done">
+
+        <div id="persons" class="persons"></div>
+
+        <section class="block">
+          <div class="date-head">
+            <span id="date-label" class="date-label"></span>
+            <label id="multi-wrap" class="check"><input name="multi" type="checkbox"> 複数日</label>
+          </div>
+          <div id="mini-cal" class="mini-cal"></div>
+        </section>
+
+        <section id="event-times" class="block">
+          <div class="time-row">
+            <span>開始</span>
+            <input name="startTime" type="time" step="300">
+            <button class="clear" type="button" data-clear="startTime" aria-label="開始の時刻を消す">×</button>
+          </div>
+          <div class="time-row">
+            <span>終了</span>
+            <input name="endTime" type="time" step="300">
+            <button class="clear" type="button" data-clear="endTime" aria-label="終了の時刻を消す">×</button>
+          </div>
+          <p class="hint">時刻が空欄なら終日の予定になります</p>
+        </section>
+
+        <section id="task-times" class="block">
+          <div class="time-row">
+            <span>期限の時刻</span>
+            <input name="dueTime" type="time" step="300">
+            <button class="clear" type="button" data-clear="dueTime" aria-label="期限の時刻を消す">×</button>
+          </div>
+          <label id="done-wrap" class="check done-check"><input name="done" type="checkbox"> 完了</label>
+        </section>
+
+        <label class="field">
+          <span>メモ</span>
+          <textarea name="description" rows="3"></textarea>
+        </label>
+
+        <p id="event-note" class="note" hidden></p>
+        <p id="event-error" class="error" hidden></p>
+        <button id="delete-btn" class="btn danger block" type="button">削除</button>
       </div>
     </form>
   </dialog>
