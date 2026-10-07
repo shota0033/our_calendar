@@ -82,6 +82,7 @@ export function formatShort(key) {
 //   ocTime: 'start'（開始だけ）| 'end'（終了だけ）| 'both' | 'due'（タスクの期限時刻）
 //   ocDone: '1'（タスク完了）
 //   ocPersons: 'cat' / 'fish' / 'cat,fish'（誰の予定か）
+//   ocConverted: '1'（アプリ形式の予定に変換済みの、元のGoogleの予定。アプリには表示しない）
 // ocPersons がない予定（メールから追加したものなど）は、入っているカレンダーで誰の予定かを決める。
 export function normalizeEvent(raw, calendar, knownPersons = []) {
   const allDay = !!raw.start?.date;
@@ -130,6 +131,7 @@ export function normalizeEvent(raw, calendar, knownPersons = []) {
     done: shared.ocDone === '1',
     persons,
     appFormat: !!shared.ocKind, // アプリで作った（またはアプリ形式に変えた）予定か
+    converted: shared.ocConverted === '1',
     recurring: !!raw.recurringEventId,
     htmlLink: raw.htmlLink || '',
   };
