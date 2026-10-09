@@ -245,24 +245,26 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
   overflow: hidden;
 }
 
-/* スマホ：月のカレンダーを画面にちょうど収め、帯を2行にする（1マスに帯6行＝3件が目安） */
+/* スマホ：月のカレンダーを画面にちょうど収め、帯を2行にする。
+   iPhone 14 くらいのホーム画面アプリで、5週の月は4件＋「他n件」、6週の月は3件＋「他n件」が入るように詰めている。
+   ここの高さを変えたら、app.js の chipsPerCell の値も合わせて直す */
 @media (max-width: 599px) {
   main:has(.month) { padding-bottom: 0; }
   .month {
     grid-template-rows: auto repeat(var(--weeks, 6), minmax(0, 1fr));
-    height: calc(100dvh - var(--month-top, 120px) - env(safe-area-inset-bottom));
+    height: calc(100dvh - var(--month-top, 120px)); /* 画面の下端（ホームバーの所）まで使う */
   }
   /* 月のカレンダーは画面に収まっているので、上下にスワイプしても画面を動かさない
      （左右のスワイプで月を移る処理は app.js。予定の画面などのダイアログは #app の外なので影響しない） */
   html:has(.month), body:has(.month) { overflow: hidden; overscroll-behavior: none; }
   #app:has(.month) { touch-action: none; }
-  .wd { padding: 2px 0; font-size: 11px; }
-  .cell { min-height: 0; padding: 1px 1px 2px; }
+  .wd { padding: 1px 0; font-size: 10.5px; line-height: 14px; }
+  .cell { min-height: 0; padding: 1px; }
   .num { width: 19.5px; height: 19.5px; line-height: 19.5px; font-size: 11.9px; font-weight: 700; margin-bottom: 1px; } /* 下の余白のぶん、少し大きく（+8%）して太字に */
   .chip.bar {
-    height: 26px; /* 1行で済む予定も、2行分の高さにそろえる */
+    height: 24px; /* 1行で済む予定も、2行分の高さにそろえる */
     font-size: 10.5px;
-    line-height: 13px;
+    line-height: 12px;
     margin-bottom: 3px;
     padding: 0 2px;
     white-space: normal;
@@ -271,7 +273,7 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
   .chip .t, .chip .n { display: block; overflow: hidden; }
   .chip.timed .n { white-space: nowrap; }
   .chip:not(.timed) .n { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-  .more { height: 14px; line-height: 14px; }
+  .more { height: 13px; line-height: 13px; }
 
   /* 上部バーの余白も詰める */
   /* 上部バーを1段にする：月の移動・猫と魚・月/一覧・メニュー */
