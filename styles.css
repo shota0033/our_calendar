@@ -233,7 +233,17 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 .chip.bar { color: #fff; padding: 0 3px; display: block; text-overflow: clip; }
 .chip .t { color: rgba(255, 255, 255, 0.85); }
 .dot { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; }
-.more { font-size: 10px; color: var(--muted); padding-left: 2px; }
+.more {
+  /* 見落とさないよう、黄色の帯で目立たせる */
+  font-size: 10px;
+  font-weight: 700;
+  color: #3a2e00;
+  background: #f5c542;
+  border-radius: 3px;
+  padding: 0 3px;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
 /* スマホ：月のカレンダーを画面にちょうど収め、帯を2行にする（1マスに帯6行＝3件が目安） */
 @media (max-width: 599px) {
@@ -261,7 +271,7 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
   .chip .t, .chip .n { display: block; overflow: hidden; }
   .chip.timed .n { white-space: nowrap; }
   .chip:not(.timed) .n { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-  .more { font-size: 10px; line-height: 12px; }
+  .more { height: 14px; line-height: 14px; }
 
   /* 上部バーの余白も詰める */
   .actions { padding: 4px 0; }
@@ -428,9 +438,7 @@ dialog.page::backdrop { background: var(--bg); }
 }
 
 .kind-seg { display: flex; width: 100%; }
-.kind-seg button { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px; font-weight: 600; }
-.kind-seg button small { font-size: 11px; font-weight: 400; opacity: 0.8; }
-.seg button[aria-selected="true"] small { opacity: 0.9; }
+.kind-seg button { flex: 1; padding: 8px; font-weight: 600; }
 
 .title-input {
   width: 100%;
@@ -494,7 +502,8 @@ dialog.page::backdrop { background: var(--bg); }
   font-variant-numeric: tabular-nums;
 }
 .mc-day span { width: 36px; height: 36px; line-height: 36px; border-radius: 50%; text-align: center; }
-.mc-day.other { opacity: 0.35; }
+.mc-day.even-month { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.mc-day.first span { font-size: 11px; font-weight: 600; }
 .mc-day.today span { box-shadow: inset 0 0 0 1.5px var(--accent); }
 .mc-day.in-range { background: color-mix(in srgb, var(--accent) 18%, transparent); }
 .mc-day.edge.start { background: linear-gradient(90deg, transparent 50%, color-mix(in srgb, var(--accent) 18%, transparent) 50%); }
@@ -529,6 +538,35 @@ dialog.page::backdrop { background: var(--bg); }
 #event-form .note { white-space: pre-line; }
 #event-form .field { margin: 0; }
 #delete-btn { margin-top: 8px; padding: 10px; }
+
+/* スマホ：予定の画面を、スクロールせずに1画面に収める（編集時の「削除」まで） */
+@media (max-width: 599px) {
+  .page-body { padding: 8px 14px calc(8px + env(safe-area-inset-bottom)); gap: 8px; }
+  .kind-seg button { padding: 5px; }
+  .title-input { font-size: 19px; padding: 4px 2px; }
+  .person-btn { padding: 4px; }
+  .person-btn .icon { font-size: 22px; }
+  .block { gap: 6px; }
+  .mini-cal { padding: 0 6px 4px; }
+  .mc-head .icon-btn { height: 32px; }
+  .mc-wd { padding: 0 0 2px; }
+  .mc-day { height: 34px; font-size: 14px; }
+  .mc-day span { width: 32px; height: 32px; line-height: 32px; }
+  .time-row input { min-height: 38px; padding: 4px 10px; }
+  .clear { width: 32px; height: 32px; }
+  #event-form .note { margin: 0; font-size: 12px; }
+  #delete-btn { margin-top: 0; padding: 8px; }
+}
+/* 背の低いスマホ（iPhone SE など）では、日付のカレンダーをさらに詰める */
+@media (max-width: 599px) and (max-height: 700px) {
+  .page-head { min-height: 44px; }
+  .page-head .btn { margin: 4px 0; padding: 4px 12px; }
+  .title-input { font-size: 17px; }
+  .mc-head .icon-btn { height: 28px; }
+  .mc-day { height: 28px; }
+  .mc-day span { width: 26px; height: 26px; line-height: 26px; }
+  .time-row input { min-height: 34px; }
+}
 #event-form.readonly .mini-cal { opacity: 0.85; }
 
 /* ---------- Googleの予定の変換 ---------- */

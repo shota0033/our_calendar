@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=14';
-import * as auth from './auth.js?v=14';
-import * as store from './store.js?v=14';
-import * as D from './dates.js?v=14';
-import * as form from './form.js?v=14';
-import * as convert from './convert.js?v=14';
-import { h, $ } from './dom.js?v=14';
+import { CONFIG } from './config.js?v=15';
+import * as auth from './auth.js?v=15';
+import * as store from './store.js?v=15';
+import * as D from './dates.js?v=15';
+import * as form from './form.js?v=15';
+import * as convert from './convert.js?v=15';
+import { h, $ } from './dom.js?v=15';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -119,7 +119,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=14').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=15').catch((err) => console.warn(err));
   }
 }
 
@@ -354,14 +354,14 @@ function chipsPerCell(weeks, rowH) {
     const n = window.innerWidth >= 900 ? 5 : 3;
     return { all: n, withMore: n };
   }
-  // styles.css のスマホ用の値：日付 19px＋余白 3px、帯 29px（2行 26px＋間隔 3px）、「他n件」12px
+  // styles.css のスマホ用の値：日付 19px＋余白 3px、帯 29px（2行 26px＋間隔 3px）、「他n件」14px
   if (!rowH) {
     const top = document.documentElement.style.getPropertyValue('--month-top');
     rowH = (window.innerHeight - (parseFloat(top) || 120) - 20) / weeks; // 20: 曜日の行
   }
   return {
     all: Math.max(1, Math.floor((rowH - 22 + 3) / 29)),
-    withMore: Math.max(1, Math.floor((rowH - 22 - 12) / 29)),
+    withMore: Math.max(1, Math.floor((rowH - 22 - 14) / 29)),
   };
 }
 

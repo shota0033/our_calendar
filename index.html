@@ -13,8 +13,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=14">
-  <script type="module" src="app.js?v=14"></script>
+  <link rel="stylesheet" href="styles.css?v=15">
+  <script type="module" src="app.js?v=15"></script>
 </head>
 <body>
   <!-- ログイン画面 -->
@@ -72,8 +72,8 @@
       </header>
       <div class="page-body">
         <div class="seg kind-seg" role="tablist">
-          <button type="button" data-kind="event" role="tab">予定<small>その日にやること</small></button>
-          <button type="button" data-kind="task" role="tab">タスク<small>その日までにやること</small></button>
+          <button type="button" data-kind="event" role="tab">予定</button>
+          <button type="button" data-kind="task" role="tab">タスク</button>
         </div>
 
         <input name="title" class="title-input" type="text" placeholder="タイトル" autocomplete="off" enterkeyhint="done">
@@ -99,7 +99,6 @@
             <input name="endTime" type="time" step="300">
             <button class="clear" type="button" data-clear="endTime" aria-label="終了の時刻を消す">×</button>
           </div>
-          <p class="hint">時刻が空欄なら終日の予定になります</p>
         </section>
 
         <section id="task-times" class="block">
@@ -113,7 +112,7 @@
 
         <label class="field">
           <span>メモ</span>
-          <textarea name="description" rows="3"></textarea>
+          <textarea name="description" rows="2"></textarea>
         </label>
 
         <p id="event-note" class="note" hidden></p>
