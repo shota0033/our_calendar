@@ -1,7 +1,7 @@
 // カレンダーと予定の読み込み・保存、オフライン用のキャッシュ
-import { CONFIG } from './config.js?v=24';
-import * as api from './api.js?v=24';
-import * as D from './dates.js?v=24';
+import { CONFIG } from './config.js?v=25';
+import * as api from './api.js?v=25';
+import * as D from './dates.js?v=25';
 
 // キャッシュの形式を変えたら CACHE_SCHEMA を上げる。古い形式のキャッシュは読まずに捨てる
 // （古い形式の予定を表示しようとして画面が止まるのを防ぐため）。

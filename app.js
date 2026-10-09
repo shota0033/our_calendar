@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=24';
-import * as auth from './auth.js?v=24';
-import * as store from './store.js?v=24';
-import * as D from './dates.js?v=24';
-import * as form from './form.js?v=24';
-import * as convert from './convert.js?v=24';
-import { h, $ } from './dom.js?v=24';
+import { CONFIG } from './config.js?v=25';
+import * as auth from './auth.js?v=25';
+import * as store from './store.js?v=25';
+import * as D from './dates.js?v=25';
+import * as form from './form.js?v=25';
+import * as convert from './convert.js?v=25';
+import { h, $ } from './dom.js?v=25';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -119,7 +119,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=24').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=25').catch((err) => console.warn(err));
   }
 }
 
@@ -391,16 +391,33 @@ function chipsPerCell(weeks, rowH) {
   };
 }
 
+// 6週の月で、最初の段（月初）と最後の段（月末）のどちらを落とすか。true なら最初の段を落とす
+// - 未来の月：月初を残し、月末は次の月に回す
+// - 過去の月：月末を残し、月初は前の月に回す（使い心地しだいで変えるかもしれない）
+// - 今月：15日までは月初を残し、16日からは月末を残す
+function dropFirstWeek(monthKey) {
+  const today = D.todayKey();
+  const thisMonth = `${today.slice(0, 7)}-01`;
+  if (monthKey > thisMonth) return false;
+  if (monthKey < thisMonth) return true;
+  return D.parts(today).d > 15;
+}
+
 function renderMonth(rowH) {
   // スマホで月のカレンダーを画面の下まで広げるため、上部バーなどの高さを渡す
   const top = $('#main').getBoundingClientRect().top + window.scrollY;
   document.documentElement.style.setProperty('--month-top', `${Math.round(top)}px`);
 
-  const start = gridStart(state.month);
   const monthPrefix = state.month.slice(0, 7);
   // その月の日が入っている週だけ表示する（5週で収まる月は、マスを縦に広く使う）
+  let start = gridStart(state.month);
   let weeks = 6;
   while (weeks > 4 && !D.addDays(start, (weeks - 1) * 7).startsWith(monthPrefix)) weeks--;
+  // 6週になる月は5週にまとめる。落とした段は隣の月の画面に必ず出る
+  if (weeks === 6) {
+    if (dropFirstWeek(state.month)) start = D.addDays(start, 7);
+    weeks = 5;
+  }
   const end = D.addDays(start, weeks * 7);
   const byDay = groupByDay(visibleEvents(), start, end);
   const today = D.todayKey();
