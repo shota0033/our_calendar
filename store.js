@@ -1,11 +1,11 @@
 // カレンダーと予定の読み込み・保存、オフライン用のキャッシュ
-import { CONFIG } from './config.js?v=12';
-import * as api from './api.js?v=12';
-import * as D from './dates.js?v=12';
+import { CONFIG } from './config.js?v=13';
+import * as api from './api.js?v=13';
+import * as D from './dates.js?v=13';
 
 // キャッシュの形式を変えたら CACHE_SCHEMA を上げる。古い形式のキャッシュは読まずに捨てる
 // （古い形式の予定を表示しようとして画面が止まるのを防ぐため）。
-const CACHE_SCHEMA = 5;
+const CACHE_SCHEMA = 6;
 const KEY_CALENDARS = `oc.cache.v${CACHE_SCHEMA}.calendars`;
 const KEY_EVENTS = `oc.cache.v${CACHE_SCHEMA}.events`;
 const KEY_OVERRIDDEN = `oc.cache.v${CACHE_SCHEMA}.overridden`;
@@ -32,13 +32,10 @@ function personOfHash(hash) {
   return PERSONS.find((p) => CONFIG.people[p].calendars.includes(hash)) || null;
 }
 
+// 2人のカレンダーは人の色、それ以外（祝日など）はすべて緑
 function colorFor(id, person) {
-  if (CONFIG.calendarColors[id]) return CONFIG.calendarColors[id];
   if (person) return CONFIG.people[person].color;
-  if (isHoliday(id)) return CONFIG.holidayColor;
-  let h = 0;
-  for (const ch of id) h = (h * 31 + ch.codePointAt(0)) >>> 0;
-  return CONFIG.palette[h % CONFIG.palette.length];
+  return CONFIG.calendarColors[id] || CONFIG.otherColor;
 }
 
 function rank(cal) {
