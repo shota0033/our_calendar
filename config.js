@@ -17,12 +17,14 @@ export const CONFIG = {
   people: {
     cat: {
       label: '僕',
+      nickname: 'しょーちゃん', // 設定画面の「このデバイスの持ち主」で使う呼び名
       icon: '🐱',
       color: '#3f7ce0',
       calendars: ['a8e58c5914793c26c3a45e4b040749723482ed57030ab1fe7e668268fbf83ccd'],
     },
     fish: {
       label: '彼女',
+      nickname: 'にゃんちゃん',
       icon: '🐟',
       color: '#e0577a',
       calendars: [

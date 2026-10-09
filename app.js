@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=25';
-import * as auth from './auth.js?v=25';
-import * as store from './store.js?v=25';
-import * as D from './dates.js?v=25';
-import * as form from './form.js?v=25';
-import * as convert from './convert.js?v=25';
-import { h, $ } from './dom.js?v=25';
+import { CONFIG } from './config.js?v=26';
+import * as auth from './auth.js?v=26';
+import * as store from './store.js?v=26';
+import * as D from './dates.js?v=26';
+import * as form from './form.js?v=26';
+import * as convert from './convert.js?v=26';
+import { h, $ } from './dom.js?v=26';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -119,7 +119,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=25').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=26').catch((err) => console.warn(err));
   }
 }
 
@@ -620,7 +620,7 @@ function renderOwnerSeg() {
   const self = store.selfPerson();
   // 以前ログイン中の人を直接選んでいた場合は「自動」と同じ
   const current = store.ownerSetting() === self ? 'auto' : store.ownerSetting();
-  const label = (p) => `${CONFIG.people[p].icon} ${CONFIG.people[p].label}`;
+  const label = (p) => `${CONFIG.people[p].icon} ${CONFIG.people[p].nickname || CONFIG.people[p].label}`;
   const options = [
     ['auto', self ? `自動（${label(self)}）` : '自動'],
     ...store.PERSONS.filter((p) => p !== self).map((p) => [p, label(p)]),
