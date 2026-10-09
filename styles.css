@@ -400,6 +400,11 @@ dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.35); }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
 .menu-heading { font-size: 14px; color: var(--muted); margin: 12px 0 4px; }
+.settings-section .menu-heading { margin-top: 0; }
+.settings-section p { margin: 4px 0 0; }
+.owner-seg { display: flex; width: 100%; }
+.owner-seg button { flex: 1; padding: 8px 4px; white-space: nowrap; }
+.settings-icon { font-size: 22px; }
 .legend { list-style: none; margin: 0 0 8px; padding: 0; }
 .legend li { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
 .legend li .muted { margin-left: auto; }

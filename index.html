@@ -13,8 +13,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=22">
-  <script type="module" src="app.js?v=22"></script>
+  <link rel="stylesheet" href="styles.css?v=23">
+  <script type="module" src="app.js?v=23"></script>
 </head>
 <body>
   <!-- ログイン画面 -->
@@ -34,7 +34,7 @@
         <button id="next-btn" class="icon-btn" type="button" aria-label="次の月">›</button>
       </div>
       <div class="actions">
-        <button id="menu-btn" class="icon-btn" type="button" aria-label="メニュー">⋯</button>
+        <button id="settings-btn" class="icon-btn settings-icon" type="button" aria-label="設定">⚙︎</button>
       </div>
       <div class="subbar">
         <div id="filters" class="filters"></div>
@@ -156,20 +156,33 @@
     </div>
   </dialog>
 
-  <!-- メニュー -->
-  <dialog id="menu-dialog" class="sheet">
-    <div class="sheet-head">
-      <h2>メニュー</h2>
+  <!-- 設定（全画面） -->
+  <dialog id="settings-dialog" class="page">
+    <header class="page-head">
       <button class="icon-btn" type="button" data-close aria-label="閉じる">×</button>
-    </div>
-    <p id="menu-account" class="muted"></p>
-    <h3 class="menu-heading">カレンダー</h3>
-    <ul id="menu-calendars" class="legend"></ul>
-    <button id="convert-btn" class="btn block" type="button">Googleの予定をアプリ形式に変換</button>
-    <div class="form-actions">
-      <button id="reload-btn" class="btn" type="button">再読み込み</button>
-      <span class="spacer"></span>
-      <button id="logout-btn" class="btn danger" type="button">ログアウト</button>
+      <h2>設定</h2>
+      <span class="head-spacer"></span>
+    </header>
+    <div class="page-body">
+      <section class="settings-section">
+        <h3 class="menu-heading">このデバイスの持ち主</h3>
+        <div id="owner-seg" class="seg owner-seg" role="radiogroup"></div>
+        <p class="muted small">持ち主の予定（2人の予定を含む）を、カレンダーで先に表示します。</p>
+      </section>
+      <section class="settings-section">
+        <h3 class="menu-heading">アカウント</h3>
+        <p id="menu-account" class="muted"></p>
+      </section>
+      <section class="settings-section">
+        <h3 class="menu-heading">カレンダー</h3>
+        <ul id="menu-calendars" class="legend"></ul>
+      </section>
+      <button id="convert-btn" class="btn block" type="button">Googleの予定をアプリ形式に変換</button>
+      <div class="form-actions">
+        <button id="reload-btn" class="btn" type="button">再読み込み</button>
+        <span class="spacer"></span>
+        <button id="logout-btn" class="btn danger" type="button">ログアウト</button>
+      </div>
     </div>
   </dialog>
 </body>

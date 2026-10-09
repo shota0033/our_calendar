@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=22';
-import * as auth from './auth.js?v=22';
-import * as store from './store.js?v=22';
-import * as D from './dates.js?v=22';
-import * as form from './form.js?v=22';
-import * as convert from './convert.js?v=22';
-import { h, $ } from './dom.js?v=22';
+import { CONFIG } from './config.js?v=23';
+import * as auth from './auth.js?v=23';
+import * as store from './store.js?v=23';
+import * as D from './dates.js?v=23';
+import * as form from './form.js?v=23';
+import * as convert from './convert.js?v=23';
+import { h, $ } from './dom.js?v=23';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -119,7 +119,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=22').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=23').catch((err) => console.warn(err));
   }
 }
 
@@ -332,7 +332,26 @@ function displayTitle(ev) {
   return `${ev.done ? '☑' : '☐'} ${ev.title}`;
 }
 
-// 範囲内の各日付に、その日に重なる予定を割り当てる
+// 同じ日の予定の並び順。グループ（持ち主 → 相手 → 2人以外 → 完了したタスク）で分け、
+// グループの中は「終日（複数日を含む） → 時刻のある予定」、開始が早い順、タイトル順
+function dayGroup(ev, owner) {
+  if (ev.kind === 'task' && ev.done) return 3;
+  if (!ev.persons.length) return 2; // 祝日など
+  if (!owner || ev.persons.includes(owner)) return 0; // 持ち主の予定（2人の予定を含む）
+  return 1;
+}
+
+function compareInDay(a, b, owner) {
+  const barA = a.allDay || a.startKey !== a.endKey;
+  const barB = b.allDay || b.startKey !== b.endKey;
+  return dayGroup(a, owner) - dayGroup(b, owner) ||
+    Number(barB) - Number(barA) ||
+    a.startKey.localeCompare(b.startKey) ||
+    a.startMs - b.startMs ||
+    a.title.localeCompare(b.title, 'ja');
+}
+
+// 範囲内の各日付に、その日に重なる予定を割り当てる（日ごとに上の順で並べる）
 function groupByDay(events, fromKey, toKey) {
   const map = new Map();
   for (const ev of events) {
@@ -344,6 +363,8 @@ function groupByDay(events, fromKey, toKey) {
       day = D.addDays(day, 1);
     }
   }
+  const owner = store.ownerPerson();
+  for (const list of map.values()) list.sort((a, b) => compareInDay(a, b, owner));
   return map;
 }
 
@@ -469,6 +490,8 @@ function renderList() {
     byDay.get(day).push(ev);
   }
   const days = [...byDay.keys()].sort();
+  const owner = store.ownerPerson();
+  for (const list of byDay.values()) list.sort((x, y) => compareInDay(x, y, owner));
 
   const sections = days.map((day) => h('section', { class: 'list-day' },
     h('h2', { class: day === today ? 'today' : '' },
@@ -564,20 +587,41 @@ function handleSaveError(err) {
 
 /* ---------- メニュー ---------- */
 
-function openMenu() {
+function openSettings() {
+  renderOwnerSeg();
   const email = auth.getEmail();
   $('#menu-account').textContent = email ? `ログイン中: ${email}` : '';
   $('#menu-calendars').replaceChildren(...store.calendars.map((c) => h('li', {},
     h('i', { class: 'dot', style: { background: c.color } }),
     h('span', {}, c.person ? `${CONFIG.people[c.person].icon} ${c.name}` : c.name),
     c.writable ? null : h('span', { class: 'muted small' }, '閲覧のみ'))));
-  $('#menu-dialog').showModal();
+  $('#settings-dialog').showModal();
+}
+
+// 持ち主の選択：「自動（ログイン中の人）」「🐱」「🐟」
+function renderOwnerSeg() {
+  const current = store.ownerSetting();
+  const self = store.selfPerson();
+  const label = (p) => `${CONFIG.people[p].icon} ${CONFIG.people[p].label}`;
+  const options = [['auto', self ? `自動（${CONFIG.people[self].icon}）` : '自動'], ...store.PERSONS.map((p) => [p, label(p)])];
+  $('#owner-seg').replaceChildren(...options.map(([value, text]) => h('button', {
+    type: 'button',
+    role: 'radio',
+    'aria-selected': String(value === current),
+    'aria-checked': String(value === current),
+    onclick: () => {
+      store.setOwnerSetting(value);
+      renderOwnerSeg();
+      render(); // 並び順を変える
+    },
+  }, text)));
 }
 
 function logout() {
   if (!confirm('ログアウトしますか？')) return;
   auth.logout();
   store.clearCache();
+  store.setOwnerSetting('auto');
   save(KEY_RESUME, null);
   save(KEY_FILTER, null);
   save(KEY_VIEW, null);
@@ -620,11 +664,11 @@ function bindUi() {
     openNewEvent(inMonth ? state.month : today);
   });
   $('#day-add-btn').addEventListener('click', () => openNewEvent(dayDialogKey));
-  $('#menu-btn').addEventListener('click', openMenu);
-  $('#reload-btn').addEventListener('click', () => { $('#menu-dialog').close(); refresh({ reloadCalendars: true }); });
+  $('#settings-btn').addEventListener('click', openSettings);
+  $('#reload-btn').addEventListener('click', () => { $('#settings-dialog').close(); refresh({ reloadCalendars: true }); });
   $('#logout-btn').addEventListener('click', logout);
   $('#convert-btn').addEventListener('click', () => {
-    $('#menu-dialog').close();
+    $('#settings-dialog').close();
     if (state.offline || !navigator.onLine) return;
     // 変換の途中でトークンが切れないよう、残りが短ければ先に取り直す
     if (auth.remainingMs() < REFRESH_BEFORE_EDIT_MS && redirectForToken()) return;

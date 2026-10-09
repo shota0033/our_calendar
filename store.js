@@ -1,7 +1,7 @@
 // カレンダーと予定の読み込み・保存、オフライン用のキャッシュ
-import { CONFIG } from './config.js?v=22';
-import * as api from './api.js?v=22';
-import * as D from './dates.js?v=22';
+import { CONFIG } from './config.js?v=23';
+import * as api from './api.js?v=23';
+import * as D from './dates.js?v=23';
 
 // キャッシュの形式を変えたら CACHE_SCHEMA を上げる。古い形式のキャッシュは読まずに捨てる
 // （古い形式の予定を表示しようとして画面が止まるのを防ぐため）。
@@ -64,6 +64,27 @@ export function calendarById(id) {
 
 export function primaryCalendar() {
   return calendars.find((c) => c.primary);
+}
+
+// このデバイスの持ち主の設定（'auto' はログイン中の人）。デバイスの中だけに保存する
+const KEY_OWNER = 'oc.owner';
+
+export function ownerSetting() {
+  const v = load(KEY_OWNER);
+  return PERSONS.includes(v) ? v : 'auto';
+}
+
+export function setOwnerSetting(v) {
+  try {
+    if (PERSONS.includes(v)) localStorage.setItem(KEY_OWNER, JSON.stringify(v));
+    else localStorage.removeItem(KEY_OWNER);
+  } catch { /* 保存できない環境では「自動」のまま */ }
+}
+
+// このデバイスの持ち主（設定がなければログイン中の人）
+export function ownerPerson() {
+  const v = ownerSetting();
+  return v === 'auto' ? selfPerson() : v;
 }
 
 // ログイン中の人（自分のメインカレンダーがどちらの人のものか）
