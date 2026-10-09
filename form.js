@@ -1,8 +1,8 @@
 // 予定・タスクの追加と編集の画面（全画面）
-import { CONFIG } from './config.js?v=9';
-import * as store from './store.js?v=9';
-import * as D from './dates.js?v=9';
-import { h, $ } from './dom.js?v=9';
+import { CONFIG } from './config.js?v=10';
+import * as store from './store.js?v=10';
+import * as D from './dates.js?v=10';
+import { h, $ } from './dom.js?v=10';
 
 // 開いているフォームの情報
 let ctx = null; // { mode: 'new' | 'edit', event, readOnly, initialDescription }

@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=9';
-import * as auth from './auth.js?v=9';
-import * as store from './store.js?v=9';
-import * as D from './dates.js?v=9';
-import * as form from './form.js?v=9';
-import * as convert from './convert.js?v=9';
-import { h, $ } from './dom.js?v=9';
+import { CONFIG } from './config.js?v=10';
+import * as auth from './auth.js?v=10';
+import * as store from './store.js?v=10';
+import * as D from './dates.js?v=10';
+import * as form from './form.js?v=10';
+import * as convert from './convert.js?v=10';
+import { h, $ } from './dom.js?v=10';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -119,7 +119,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=9').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=10').catch((err) => console.warn(err));
   }
 }
 
@@ -369,16 +369,14 @@ function renderMonth() {
     if (wd === 0 || events.some(isHolidayEvent)) classes.push('sun');
     else if (wd === 6) classes.push('sat');
 
+    // 終日も時刻ありも、すべて色の帯で表示する（時刻は広い画面だけ帯の中に出す）
     const chips = events.slice(0, maxChips).map((ev) => {
-      const color = eventColor(ev);
-      const isBar = ev.allDay || ev.startKey !== ev.endKey;
       const onclick = canHover ? (e) => { e.stopPropagation(); openEvent(ev); } : null;
-      const cls = `chip${isBar ? ' bar' : ''}${ev.kind === 'task' && ev.done ? ' done' : ''}`;
-      return isBar
-        ? h('div', { class: cls, style: { background: color }, onclick }, displayTitle(ev))
-        : h('div', { class: cls, onclick },
-          h('i', { class: 'dot', style: { background: color } }),
-          h('span', { class: 't' }, ev.timeMode === 'end' ? `〜${ev.endTime}` : ev.startTime), displayTitle(ev));
+      const cls = `chip bar${ev.kind === 'task' && ev.done ? ' done' : ''}`;
+      const showTime = !ev.allDay && ev.startKey === ev.endKey;
+      return h('div', { class: cls, style: { background: eventColor(ev) }, onclick },
+        showTime ? h('span', { class: 't' }, ev.timeMode === 'end' ? `〜${ev.endTime}` : ev.startTime) : null,
+        displayTitle(ev));
     });
     if (events.length > maxChips) chips.push(h('div', { class: 'more' }, `他${events.length - maxChips}件`));
 

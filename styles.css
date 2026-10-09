@@ -232,6 +232,7 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 }
 .chip.bar { color: #fff; padding: 0 3px; display: block; text-overflow: clip; }
 .chip .t { display: none; color: var(--muted); }
+.chip.bar .t { color: rgba(255, 255, 255, 0.85); margin-right: 3px; }
 .dot { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; }
 .more { font-size: 10px; color: var(--muted); padding-left: 2px; }
 
