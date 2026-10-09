@@ -83,7 +83,15 @@ export function formatShort(key) {
 //   ocDone: '1'（タスク完了）
 //   ocPersons: 'cat' / 'fish' / 'cat,fish'（誰の予定か）
 //   ocConverted: '1'（アプリ形式の予定に変換済みの、元のGoogleの予定。アプリには表示しない）
+//   ocOverride: '1'（アプリで書き換え・非表示にした印。この印のある予定の ocSource をアプリに表示しない）
+//   ocSource: 'カレンダーID|予定ID'（アプリで書き換えた・非表示にした元の予定）
+//   ocHidden: '1'（非表示の印だけの予定。アプリには表示しない）
 // ocPersons がない予定（メールから追加したものなど）は、入っているカレンダーで誰の予定かを決める。
+// 予定を指す文字列（ocSource に入れる）
+export function sourceKey(calendarId, eventId) {
+  return `${calendarId}|${eventId}`;
+}
+
 export function normalizeEvent(raw, calendar, knownPersons = []) {
   const allDay = !!raw.start?.date;
   let startKey, endKey, startMs, endMs;
@@ -132,6 +140,8 @@ export function normalizeEvent(raw, calendar, knownPersons = []) {
     persons,
     appFormat: !!shared.ocKind, // アプリで作った（またはアプリ形式に変えた）予定か
     converted: shared.ocConverted === '1',
+    source: shared.ocSource || '', // アプリで書き換えた元の予定（sourceKey の形）
+    marker: shared.ocHidden === '1',
     recurring: !!raw.recurringEventId,
     htmlLink: raw.htmlLink || '',
   };

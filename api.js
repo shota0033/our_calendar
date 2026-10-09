@@ -1,5 +1,5 @@
 // Google Calendar API の呼び出し
-import { getToken, invalidateToken } from './auth.js?v=10';
+import { getToken, invalidateToken } from './auth.js?v=11';
 
 const BASE = 'https://www.googleapis.com/calendar/v3';
 
@@ -73,6 +73,14 @@ export function listEvents(calendarId, timeMin, timeMax, timeZone) {
     timeMin, timeMax, timeZone,
     singleEvents: 'true',
     orderBy: 'startTime',
+    maxResults: 2500,
+  });
+}
+
+// アプリで書き換え・非表示にした印（ocOverride=1）の付いた予定を、日付に関係なくすべて取得する
+export function listOverrides(calendarId) {
+  return listAll(`/calendars/${encodeURIComponent(calendarId)}/events`, {
+    sharedExtendedProperty: 'ocOverride=1',
     maxResults: 2500,
   });
 }

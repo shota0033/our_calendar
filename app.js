@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=10';
-import * as auth from './auth.js?v=10';
-import * as store from './store.js?v=10';
-import * as D from './dates.js?v=10';
-import * as form from './form.js?v=10';
-import * as convert from './convert.js?v=10';
-import { h, $ } from './dom.js?v=10';
+import { CONFIG } from './config.js?v=11';
+import * as auth from './auth.js?v=11';
+import * as store from './store.js?v=11';
+import * as D from './dates.js?v=11';
+import * as form from './form.js?v=11';
+import * as convert from './convert.js?v=11';
+import { h, $ } from './dom.js?v=11';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -119,7 +119,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=10').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=11').catch((err) => console.warn(err));
   }
 }
 
@@ -484,7 +484,7 @@ function openNewEvent(dayKey) {
 
 function openEvent(ev) {
   const fields = form.fieldsFromEvent(ev);
-  if (store.isWritable(ev) && !state.offline && navigator.onLine && auth.remainingMs() < REFRESH_BEFORE_EDIT_MS) {
+  if (store.canEdit(ev) && !state.offline && navigator.onLine && auth.remainingMs() < REFRESH_BEFORE_EDIT_MS) {
     if (redirectWithDraft({ mode: 'edit', event: ev, fields })) return;
   }
   closeDayDialog();
