@@ -25,7 +25,10 @@ export const CONFIG = {
       label: '彼女',
       icon: '🐟',
       color: '#e0577a',
-      calendars: ['1fd1ef0de0e58cf6a5b6f09dc1b3ef788ef8fb3a64c27de79981dcf966da5f0d'],
+      calendars: [
+        '1fd1ef0de0e58cf6a5b6f09dc1b3ef788ef8fb3a64c27de79981dcf966da5f0d',
+        '436cf38ebc67fc09757130a27f4310cf5bde6dab5fdcb6c804908d5b648f771d', // アカウント2（閲覧のみで共有）
+      ],
     },
   },
   // 2人の予定の色
