@@ -13,8 +13,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=15">
-  <script type="module" src="app.js?v=15"></script>
+  <link rel="stylesheet" href="styles.css?v=16">
+  <script type="module" src="app.js?v=16"></script>
 </head>
 <body>
   <!-- ログイン画面 -->
@@ -91,12 +91,12 @@
         <section id="event-times" class="block">
           <div class="time-row">
             <span>開始</span>
-            <input name="startTime" type="time" step="300">
+            <div class="time-pick" data-time="startTime"><input name="startTime" type="hidden"><select name="startTime_h" aria-label="時"></select><span>:</span><select name="startTime_m" aria-label="分"></select></div>
             <button class="clear" type="button" data-clear="startTime" aria-label="開始の時刻を消す">×</button>
           </div>
           <div class="time-row">
             <span>終了</span>
-            <input name="endTime" type="time" step="300">
+            <div class="time-pick" data-time="endTime"><input name="endTime" type="hidden"><select name="endTime_h" aria-label="時"></select><span>:</span><select name="endTime_m" aria-label="分"></select></div>
             <button class="clear" type="button" data-clear="endTime" aria-label="終了の時刻を消す">×</button>
           </div>
         </section>
@@ -104,7 +104,7 @@
         <section id="task-times" class="block">
           <div class="time-row">
             <span>期限の時刻</span>
-            <input name="dueTime" type="time" step="300">
+            <div class="time-pick" data-time="dueTime"><input name="dueTime" type="hidden"><select name="dueTime_h" aria-label="時"></select><span>:</span><select name="dueTime_m" aria-label="分"></select></div>
             <button class="clear" type="button" data-clear="dueTime" aria-label="期限の時刻を消す">×</button>
           </div>
           <label id="done-wrap" class="check done-check"><input name="done" type="checkbox"> 完了</label>

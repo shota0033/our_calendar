@@ -502,8 +502,7 @@ dialog.page::backdrop { background: var(--bg); }
   font-variant-numeric: tabular-nums;
 }
 .mc-day span { width: 36px; height: 36px; line-height: 36px; border-radius: 50%; text-align: center; }
-.mc-day.even-month { background: color-mix(in srgb, var(--text) 6%, transparent); }
-.mc-day.first span { font-size: 11px; font-weight: 600; }
+.mc-day.other { opacity: 0.35; }
 .mc-day.today span { box-shadow: inset 0 0 0 1.5px var(--accent); }
 .mc-day.in-range { background: color-mix(in srgb, var(--accent) 18%, transparent); }
 .mc-day.edge.start { background: linear-gradient(90deg, transparent 50%, color-mix(in srgb, var(--accent) 18%, transparent) 50%); }
@@ -513,6 +512,8 @@ dialog.page::backdrop { background: var(--bg); }
 
 .time-row { display: flex; align-items: center; gap: 8px; }
 .time-row > span { width: 5.5em; flex: none; color: var(--muted); font-size: 14px; }
+.time-pick { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
+.time-pick select,
 .time-row input {
   flex: 1;
   min-width: 0;
@@ -550,9 +551,9 @@ dialog.page::backdrop { background: var(--bg); }
   .mini-cal { padding: 0 6px 4px; }
   .mc-head .icon-btn { height: 32px; }
   .mc-wd { padding: 0 0 2px; }
-  .mc-day { height: 34px; font-size: 14px; }
+  .mc-day { height: 36px; font-size: 14px; } /* 月単位で表示するため、高さは少しだけ広げる */
   .mc-day span { width: 32px; height: 32px; line-height: 32px; }
-  .time-row input { min-height: 38px; padding: 4px 10px; }
+  .time-pick select, .time-row input { min-height: 38px; padding: 4px 10px; }
   .clear { width: 32px; height: 32px; }
   #event-form .note { margin: 0; font-size: 12px; }
   #delete-btn { margin-top: 0; padding: 8px; }
@@ -563,9 +564,9 @@ dialog.page::backdrop { background: var(--bg); }
   .page-head .btn { margin: 4px 0; padding: 4px 12px; }
   .title-input { font-size: 17px; }
   .mc-head .icon-btn { height: 28px; }
-  .mc-day { height: 28px; }
+  .mc-day { height: 30px; }
   .mc-day span { width: 26px; height: 26px; line-height: 26px; }
-  .time-row input { min-height: 34px; }
+  .time-pick select, .time-row input { min-height: 34px; }
 }
 #event-form.readonly .mini-cal { opacity: 0.85; }
 

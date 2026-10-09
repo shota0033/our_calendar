@@ -4,7 +4,7 @@
 // 画面遷移型フロー（response_type=token）に prompt=none を付けて使う。
 // Googleにログイン中かつ同意済みなら、Googleへ一瞬移動してすぐ戻ってくる。
 // 将来この方式が使えなくなったら、このファイルだけ差し替える。
-import { CONFIG } from './config.js?v=15';
+import { CONFIG } from './config.js?v=16';
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const KEY_TOKEN = 'oc.token';

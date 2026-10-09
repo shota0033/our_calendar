@@ -1,15 +1,14 @@
 // 予定・タスクの追加と編集の画面（全画面）
-import { CONFIG } from './config.js?v=15';
-import * as store from './store.js?v=15';
-import * as D from './dates.js?v=15';
-import { h, $ } from './dom.js?v=15';
+import { CONFIG } from './config.js?v=16';
+import * as store from './store.js?v=16';
+import * as D from './dates.js?v=16';
+import { h, $ } from './dom.js?v=16';
 
 // 開いているフォームの情報
 let ctx = null; // { mode: 'new' | 'edit', event, readOnly, initialDescription }
 // 入力中の値（フォーム要素に入らないもの）
 let draft = null; // { kind, persons, startKey, endKey, multi }
-let viewStart = null; // 小さなカレンダーの1行目の日曜日（'YYYY-MM-DD'）。5週間分を表示する
-const MINI_WEEKS = 5;
+let viewMonth = null; // 小さなカレンダーに表示中の月（'YYYY-MM-01'）
 let picking = 'start'; // 複数日で次にタップする日付が開始日か終了日か
 let hooks = { onSaved() {}, onSaveError() {} };
 
@@ -32,12 +31,51 @@ export function initForm(callbacks) {
     btn.addEventListener('click', () => { if (!ctx?.readOnly) setKind(btn.dataset.kind); });
   }
   form.elements.multi.addEventListener('change', () => setMulti(form.elements.multi.checked));
+  for (const pick of form.querySelectorAll('.time-pick')) initTimePick(pick);
   for (const btn of form.querySelectorAll('[data-clear]')) {
-    btn.addEventListener('click', () => { form.elements[btn.dataset.clear].value = ''; });
+    btn.addEventListener('click', () => setTime(btn.dataset.clear, ''));
   }
   form.addEventListener('submit', submit);
   $('#delete-btn').addEventListener('click', remove);
   $('#event-dialog').addEventListener('close', () => { ctx = null; draft = null; });
+}
+
+/* ---------- 時刻の入力（時と分を選ぶ。分は5分刻み） ---------- */
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
+// 時・分の選択肢を作り、選んだら隠しの入力欄（name=startTime など）に「HH:MM」を入れる
+function initTimePick(pick) {
+  const name = pick.dataset.time;
+  const e = els();
+  const hour = e[`${name}_h`];
+  const minute = e[`${name}_m`];
+  hour.replaceChildren(h('option', { value: '' }, '--'),
+    ...Array.from({ length: 24 }, (_, i) => h('option', { value: pad2(i) }, `${i}時`)));
+  minute.replaceChildren(h('option', { value: '' }, '--'),
+    ...Array.from({ length: 12 }, (_, i) => h('option', { value: pad2(i * 5) }, `${pad2(i * 5)}分`)));
+  const sync = () => {
+    // 時を選んで分が空なら00分にする。時が空なら時刻なし
+    if (hour.value && !minute.value) minute.value = '00';
+    e[name].value = hour.value ? `${hour.value}:${minute.value}` : '';
+  };
+  hour.addEventListener('change', sync);
+  minute.addEventListener('change', sync);
+}
+
+function setTime(name, value) {
+  const e = els();
+  const [hh = '', mm = ''] = value ? value.split(':') : [];
+  const minute = e[`${name}_m`];
+  // 5分刻みでない時刻（Googleで入れた予定など）は、その分も選べるようにする
+  if (mm && ![...minute.options].some((o) => o.value === mm)) {
+    const option = h('option', { value: mm }, `${mm}分`);
+    const next = [...minute.options].find((o) => o.value > mm);
+    minute.insertBefore(option, next || null);
+  }
+  e[`${name}_h`].value = hh;
+  minute.value = mm;
+  e[name].value = value || '';
 }
 
 export function isOpen() {
@@ -116,14 +154,14 @@ export function openForm(mode, event, fields, { offline = false } = {}) {
     multi: fields.multi,
   };
   picking = 'start';
-  // 最初の日付（新規は今日か選んだ日、編集は元の日付）の週を真ん中にして、前後2週を表示する
-  viewStart = D.addDays(fields.startKey, -D.weekday(fields.startKey) - 14);
+  // 最初の日付（新規は今日か選んだ日、編集は元の日付）の月を表示する
+  viewMonth = D.monthKey(D.parts(fields.startKey).y, D.parts(fields.startKey).m);
 
   const e = els();
   e.title.value = fields.title;
-  e.startTime.value = fields.startTime;
-  e.endTime.value = fields.endTime;
-  e.dueTime.value = fields.dueTime;
+  setTime('startTime', fields.startTime);
+  setTime('endTime', fields.endTime);
+  setTime('dueTime', fields.dueTime);
   e.done.checked = fields.done;
   e.description.value = fields.description;
   e.multi.checked = fields.multi;
@@ -139,7 +177,7 @@ export function openForm(mode, event, fields, { offline = false } = {}) {
   if (readOnly && !offline) notes.push('この予定は編集できません。');
   if (offline) notes.push('オフラインのため編集できません。');
   if (mode === 'edit' && !readOnly && !store.editsInPlace(event)) {
-    notes.push('Googleから入った予定です。変更・削除しても元の予定は残ります。');
+    notes.push('Googleの予定です。変更・削除しても元の予定は残ります。');
     if (event.recurring) notes.push('繰り返し予定です。変更・削除はこの回だけに適用されます。');
   }
   $('#event-note').textContent = notes.join('\n');
@@ -232,9 +270,9 @@ function pickDate(key) {
   renderDates();
 }
 
-// 前後へ4週ずつ動かす（1週は重ねて、どこから動いたかわかるようにする）
-function moveMiniWeeks(delta) {
-  viewStart = D.addDays(viewStart, delta * (MINI_WEEKS - 1) * 7);
+function moveMiniMonth(delta) {
+  const { y, m } = D.parts(viewMonth);
+  viewMonth = D.monthKey(y, m + delta);
   renderDates();
 }
 
@@ -247,25 +285,21 @@ function renderDates() {
   else label = `${D.formatDayLabel(startKey)} 〜 ${endKey ? D.formatDayLabel(endKey) : '終了日をタップ'}`;
   $('#date-label').textContent = label;
 
-  const gridStart = viewStart;
-  const gridEnd = D.addDays(gridStart, MINI_WEEKS * 7 - 1);
+  const { y, m } = D.parts(viewMonth);
+  const first = viewMonth;
+  const gridStart = D.addDays(first, -D.weekday(first));
   const today = D.todayKey();
+  const monthPrefix = first.slice(0, 7);
   const rangeEnd = endKey || startKey;
-
-  // 見出しは表示している範囲の年月（月をまたぐときは「10月〜11月」）
-  const a = D.parts(gridStart);
-  const b = D.parts(gridEnd);
-  let title = `${a.y}年${a.m}月`;
-  if (a.y !== b.y) title += `〜${b.y}年${b.m}月`;
-  else if (a.m !== b.m) title += `〜${b.m}月`;
+  // その月の日が入っている週だけ表示する（4〜6週）
+  let weeks = 6;
+  while (weeks > 4 && !D.addDays(gridStart, (weeks - 1) * 7).startsWith(monthPrefix)) weeks--;
 
   const cells = [];
-  for (let i = 0; i < MINI_WEEKS * 7; i++) {
+  for (let i = 0; i < weeks * 7; i++) {
     const key = D.addDays(gridStart, i);
-    const { m, d } = D.parts(key);
     const cls = ['mc-day'];
-    if (m % 2 === 0) cls.push('even-month'); // 月の境目がわかるよう、月ごとに背景を交互にする
-    if (d === 1) cls.push('first');
+    if (!key.startsWith(monthPrefix)) cls.push('other');
     if (key === today) cls.push('today');
     if (i % 7 === 0) cls.push('sun');
     if (i % 7 === 6) cls.push('sat');
@@ -278,14 +312,14 @@ function renderDates() {
       class: cls.join(' '),
       disabled: ctx.readOnly,
       onclick: () => pickDate(key),
-    }, h('span', {}, d === 1 ? `${m}/1` : d)));
+    }, h('span', {}, D.parts(key).d)));
   }
 
   $('#mini-cal').replaceChildren(
     h('div', { class: 'mc-head' },
-      h('button', { type: 'button', class: 'icon-btn', 'aria-label': '前へ', onclick: () => moveMiniWeeks(-1) }, '‹'),
-      h('span', { class: 'mc-title' }, title),
-      h('button', { type: 'button', class: 'icon-btn', 'aria-label': '次へ', onclick: () => moveMiniWeeks(1) }, '›')),
+      h('button', { type: 'button', class: 'icon-btn', 'aria-label': '前の月', onclick: () => moveMiniMonth(-1) }, '‹'),
+      h('span', { class: 'mc-title' }, `${y}年${m}月`),
+      h('button', { type: 'button', class: 'icon-btn', 'aria-label': '次の月', onclick: () => moveMiniMonth(1) }, '›')),
     h('div', { class: 'mc-grid' },
       D.WEEKDAYS.map((w, i) => h('span', { class: `mc-wd ${i === 0 ? 'sun' : ''} ${i === 6 ? 'sat' : ''}` }, w)),
       cells));
