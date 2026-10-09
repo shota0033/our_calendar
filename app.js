@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=11';
-import * as auth from './auth.js?v=11';
-import * as store from './store.js?v=11';
-import * as D from './dates.js?v=11';
-import * as form from './form.js?v=11';
-import * as convert from './convert.js?v=11';
-import { h, $ } from './dom.js?v=11';
+import { CONFIG } from './config.js?v=12';
+import * as auth from './auth.js?v=12';
+import * as store from './store.js?v=12';
+import * as D from './dates.js?v=12';
+import * as form from './form.js?v=12';
+import * as convert from './convert.js?v=12';
+import { h, $ } from './dom.js?v=12';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -119,7 +119,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=11').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=12').catch((err) => console.warn(err));
   }
 }
 
@@ -346,20 +346,44 @@ function isHolidayEvent(ev) {
   return store.calendarById(ev.calendarId)?.holiday;
 }
 
+// 1マスに表示する帯の数。スマホでは、マスの高さに入るだけ表示する（少なくとも3件）
+// all: すべて帯で表示できる数、withMore: 「他n件」を出すときの帯の数
+function chipsPerCell(weeks) {
+  if (window.innerWidth >= 600) {
+    const n = window.innerWidth >= 900 ? 5 : 3;
+    return { all: n, withMore: n };
+  }
+  // styles.css のスマホ用の値：日付 19px＋余白 3px、帯 28px（2行＋間隔）、「他n件」13px、最低の行の高さ 106px
+  const top = document.documentElement.style.getPropertyValue('--month-top');
+  const monthH = window.innerHeight - (parseFloat(top) || 120) - 20; // 20: 曜日の行
+  const rowH = Math.max(106, monthH / weeks);
+  return {
+    all: Math.max(3, Math.floor((rowH - 22) / 28)),
+    withMore: Math.max(2, Math.floor((rowH - 22 - 13) / 28)),
+  };
+}
+
 function renderMonth() {
+  // スマホで月のカレンダーを画面の下まで広げるため、上部バーなどの高さを渡す
+  const top = $('#main').getBoundingClientRect().top + window.scrollY;
+  document.documentElement.style.setProperty('--month-top', `${Math.round(top)}px`);
+
   const start = gridStart(state.month);
-  const end = D.addDays(start, 42);
+  const monthPrefix = state.month.slice(0, 7);
+  // その月の日が入っている週だけ表示する（5週で収まる月は、マスを縦に広く使う）
+  let weeks = 6;
+  while (weeks > 4 && !D.addDays(start, (weeks - 1) * 7).startsWith(monthPrefix)) weeks--;
+  const end = D.addDays(start, weeks * 7);
   const byDay = groupByDay(visibleEvents(), start, end);
   const today = D.todayKey();
-  const monthPrefix = state.month.slice(0, 7);
-  const maxChips = window.innerWidth >= 900 ? 5 : 3;
+  const maxChips = chipsPerCell(weeks);
   const canHover = matchMedia('(hover: hover)').matches;
 
   const head = D.WEEKDAYS.map((w, i) =>
     h('div', { class: `wd ${i === 0 ? 'sun' : ''} ${i === 6 ? 'sat' : ''}` }, w));
 
   const cells = [];
-  for (let i = 0; i < 42; i++) {
+  for (let i = 0; i < weeks * 7; i++) {
     const key = D.addDays(start, i);
     const events = byDay.get(key) || [];
     const wd = i % 7;
@@ -369,23 +393,26 @@ function renderMonth() {
     if (wd === 0 || events.some(isHolidayEvent)) classes.push('sun');
     else if (wd === 6) classes.push('sat');
 
-    // 終日も時刻ありも、すべて色の帯で表示する（時刻は広い画面だけ帯の中に出す）
-    const chips = events.slice(0, maxChips).map((ev) => {
+    // 終日も時刻ありも、すべて色の帯で表示する。
+    // スマホでは帯を2行にし、時刻のある予定は1行目に時刻、2行目にタイトルを出す（styles.css）
+    // 入りきらないときは、最後の1行を「他n件」にする
+    const shown = events.length > maxChips.all ? maxChips.withMore : events.length;
+    const chips = events.slice(0, shown).map((ev) => {
       const onclick = canHover ? (e) => { e.stopPropagation(); openEvent(ev); } : null;
-      const cls = `chip bar${ev.kind === 'task' && ev.done ? ' done' : ''}`;
       const showTime = !ev.allDay && ev.startKey === ev.endKey;
+      const cls = `chip bar${showTime ? ' timed' : ''}${ev.kind === 'task' && ev.done ? ' done' : ''}`;
       return h('div', { class: cls, style: { background: eventColor(ev) }, onclick },
         showTime ? h('span', { class: 't' }, ev.timeMode === 'end' ? `〜${ev.endTime}` : ev.startTime) : null,
-        displayTitle(ev));
+        h('span', { class: 'n' }, displayTitle(ev)));
     });
-    if (events.length > maxChips) chips.push(h('div', { class: 'more' }, `他${events.length - maxChips}件`));
+    if (events.length > shown) chips.push(h('div', { class: 'more' }, `他${events.length - shown}件`));
 
     cells.push(h('div', { class: classes.join(' '), onclick: () => openDay(key) },
       h('div', { class: 'num' }, D.parts(key).d),
       chips));
   }
 
-  $('#main').replaceChildren(h('div', { class: 'month' }, head, cells));
+  $('#main').replaceChildren(h('div', { class: 'month', style: { '--weeks': weeks } }, head, cells));
 }
 
 function timeText(ev) {
