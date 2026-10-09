@@ -231,15 +231,46 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
   border-radius: 3px;
 }
 .chip.bar { color: #fff; padding: 0 3px; display: block; text-overflow: clip; }
-.chip .t { display: none; color: var(--muted); }
-.chip.bar .t { color: rgba(255, 255, 255, 0.85); margin-right: 3px; }
+.chip .t { color: rgba(255, 255, 255, 0.85); }
 .dot { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; }
 .more { font-size: 10px; color: var(--muted); padding-left: 2px; }
+
+/* スマホ：月のカレンダーを画面の下まで広げ、帯を2行にする（1マスに帯6行＝3件が目安） */
+@media (max-width: 599px) {
+  main:has(.month) { padding-bottom: env(safe-area-inset-bottom); }
+  .month {
+    grid-template-rows: auto repeat(var(--weeks, 6), minmax(106px, 1fr));
+    min-height: calc(100dvh - var(--month-top, 120px) - env(safe-area-inset-bottom));
+  }
+  .wd { padding: 2px 0; font-size: 11px; }
+  .cell { min-height: 0; padding: 1px 1px 2px; }
+  .num { width: 18px; height: 18px; line-height: 18px; font-size: 11px; margin-bottom: 1px; }
+  .chip.bar {
+    height: auto;
+    max-height: 26px;
+    font-size: 10.5px;
+    line-height: 13px;
+    margin-bottom: 2px;
+    padding: 0 2px;
+    white-space: normal;
+    word-break: break-all;
+  }
+  .chip .t, .chip .n { display: block; overflow: hidden; }
+  .chip.timed .n { white-space: nowrap; }
+  .chip:not(.timed) .n { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .more { font-size: 10px; line-height: 12px; }
+
+  /* 上部バーの余白も詰める */
+  .actions { padding: 4px 0; }
+  .subbar { padding: 0 4px 4px; }
+  .filter-btn { height: 30px; font-size: 18px; }
+  .view-seg button { padding: 3px 10px; }
+}
 
 @media (min-width: 600px) {
   .cell { min-height: 110px; padding: 4px; }
   .chip { font-size: 12px; line-height: 18px; height: 18px; }
-  .chip .t { display: inline; }
+  .chip .t { margin-right: 3px; }
   .chip:hover { background: var(--surface); }
   .chip.bar:hover { filter: brightness(1.08); }
 }

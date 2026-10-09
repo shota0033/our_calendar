@@ -1,8 +1,8 @@
 // 予定・タスクの追加と編集の画面（全画面）
-import { CONFIG } from './config.js?v=10';
-import * as store from './store.js?v=10';
-import * as D from './dates.js?v=10';
-import { h, $ } from './dom.js?v=10';
+import { CONFIG } from './config.js?v=13';
+import * as store from './store.js?v=13';
+import * as D from './dates.js?v=13';
+import { h, $ } from './dom.js?v=13';
 
 // 開いているフォームの情報
 let ctx = null; // { mode: 'new' | 'edit', event, readOnly, initialDescription }
@@ -105,7 +105,7 @@ export function fieldsFromEvent(ev) {
 /* ---------- 開く・閉じる ---------- */
 
 export function openForm(mode, event, fields, { offline = false } = {}) {
-  const readOnly = offline || (mode === 'edit' && !store.isWritable(event));
+  const readOnly = offline || (mode === 'edit' && !store.canEdit(event));
   ctx = { mode, event, readOnly, initialDescription: fields.description };
   draft = {
     kind: fields.kind,
@@ -134,9 +134,12 @@ export function openForm(mode, event, fields, { offline = false } = {}) {
   $('#done-wrap').hidden = mode !== 'edit';
 
   const notes = [];
-  if (readOnly && !offline) notes.push('このカレンダーは閲覧のみです。');
+  if (readOnly && !offline) notes.push('この予定は編集できません。');
   if (offline) notes.push('オフラインのため編集できません。');
-  if (mode === 'edit' && event.recurring && !readOnly) notes.push('繰り返し予定です。変更・削除はこの回だけに適用されます。');
+  if (mode === 'edit' && !readOnly && !store.editsInPlace(event)) {
+    notes.push('Googleカレンダーから入った予定です。アプリで変更・削除しても、Googleカレンダーの元の予定はそのまま残ります。');
+    if (event.recurring) notes.push('繰り返し予定です。変更・削除はこの回だけに適用されます。');
+  }
   $('#event-note').textContent = notes.join('\n');
   $('#event-note').hidden = !notes.length;
   showError('');
@@ -334,7 +337,11 @@ async function submit(e) {
 async function remove() {
   const ev = ctx?.event;
   if (!ev) return;
-  const extra = ev.recurring ? '\n（繰り返し予定のこの回だけを削除します）' : '';
+  let extra = '';
+  if (!store.editsInPlace(ev)) {
+    extra = '\n（アプリに表示しなくなります。Googleカレンダーの元の予定は残ります）';
+    if (ev.recurring) extra += '\n（繰り返し予定のこの回だけです）';
+  }
   if (!confirm(`「${ev.title}」を削除しますか？${extra}`)) return;
   setBusy(true);
   try {
