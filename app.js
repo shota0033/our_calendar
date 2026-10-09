@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=23';
-import * as auth from './auth.js?v=23';
-import * as store from './store.js?v=23';
-import * as D from './dates.js?v=23';
-import * as form from './form.js?v=23';
-import * as convert from './convert.js?v=23';
-import { h, $ } from './dom.js?v=23';
+import { CONFIG } from './config.js?v=24';
+import * as auth from './auth.js?v=24';
+import * as store from './store.js?v=24';
+import * as D from './dates.js?v=24';
+import * as form from './form.js?v=24';
+import * as convert from './convert.js?v=24';
+import { h, $ } from './dom.js?v=24';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -119,7 +119,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=23').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=24').catch((err) => console.warn(err));
   }
 }
 
@@ -598,12 +598,16 @@ function openSettings() {
   $('#settings-dialog').showModal();
 }
 
-// 持ち主の選択：「自動（ログイン中の人）」「🐱」「🐟」
+// 持ち主の選択：「自動（ログイン中の人）」と、もう1人の2択
 function renderOwnerSeg() {
-  const current = store.ownerSetting();
   const self = store.selfPerson();
+  // 以前ログイン中の人を直接選んでいた場合は「自動」と同じ
+  const current = store.ownerSetting() === self ? 'auto' : store.ownerSetting();
   const label = (p) => `${CONFIG.people[p].icon} ${CONFIG.people[p].label}`;
-  const options = [['auto', self ? `自動（${CONFIG.people[self].icon}）` : '自動'], ...store.PERSONS.map((p) => [p, label(p)])];
+  const options = [
+    ['auto', self ? `自動（${label(self)}）` : '自動'],
+    ...store.PERSONS.filter((p) => p !== self).map((p) => [p, label(p)]),
+  ];
   $('#owner-seg').replaceChildren(...options.map(([value, text]) => h('button', {
     type: 'button',
     role: 'radio',
