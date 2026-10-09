@@ -232,6 +232,13 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
   border-radius: 3px;
 }
 .chip.bar { color: #fff; padding: 0 3px; display: block; text-overflow: clip; }
+/* タスク：人の色の枠と文字だけの「白抜き」の帯（中はうっすら色を付けて読みやすくする） */
+.chip.bar.task {
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--c);
+  color: color-mix(in srgb, var(--c) 75%, var(--text));
+}
+.chip.bar.task .t { color: inherit; opacity: 0.85; }
 .chip .t { color: rgba(255, 255, 255, 0.85); }
 .dot { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; }
 .more {

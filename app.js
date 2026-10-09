@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=26';
-import * as auth from './auth.js?v=26';
-import * as store from './store.js?v=26';
-import * as D from './dates.js?v=26';
-import * as form from './form.js?v=26';
-import * as convert from './convert.js?v=26';
-import { h, $ } from './dom.js?v=26';
+import { CONFIG } from './config.js?v=27';
+import * as auth from './auth.js?v=27';
+import * as store from './store.js?v=27';
+import * as D from './dates.js?v=27';
+import * as form from './form.js?v=27';
+import * as convert from './convert.js?v=27';
+import { h, $ } from './dom.js?v=27';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -119,7 +119,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=26').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=27').catch((err) => console.warn(err));
   }
 }
 
@@ -327,9 +327,10 @@ function personIcons(ev) {
   return ev.persons.map((p) => CONFIG.people[p].icon).join('');
 }
 
+// タスクは帯の見た目（白抜き）で区別するので、☐は付けない。完了したタスクだけ☑を付ける
 function displayTitle(ev) {
-  if (ev.kind !== 'task') return ev.title;
-  return `${ev.done ? '☑' : '☐'} ${ev.title}`;
+  if (ev.kind === 'task' && ev.done) return `☑ ${ev.title}`;
+  return ev.title;
 }
 
 // 同じ日の予定の並び順。グループ（持ち主 → 相手 → 2人以外 → 完了したタスク）で分け、
@@ -445,8 +446,11 @@ function renderMonth(rowH) {
     const chips = events.slice(0, shown).map((ev) => {
       const onclick = canHover ? (e) => { e.stopPropagation(); openEvent(ev); } : null;
       const showTime = !ev.allDay && ev.startKey === ev.endKey;
-      const cls = `chip bar${showTime ? ' timed' : ''}${ev.kind === 'task' && ev.done ? ' done' : ''}`;
-      return h('div', { class: cls, style: { background: eventColor(ev) }, onclick },
+      const task = ev.kind === 'task';
+      const cls = `chip bar${showTime ? ' timed' : ''}${task ? ' task' : ''}${task && ev.done ? ' done' : ''}`;
+      // 予定は人の色で塗りつぶし、タスクは人の色の枠と文字の「白抜き」にする（styles.css の .chip.task）
+      const style = task ? { '--c': eventColor(ev) } : { background: eventColor(ev) };
+      return h('div', { class: cls, style, onclick },
         showTime ? h('span', { class: 't' }, ev.timeMode === 'end' ? `〜${ev.endTime}` : ev.startTime) : null,
         h('span', { class: 'n' }, displayTitle(ev)));
     });
