@@ -258,7 +258,7 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
   #app:has(.month) { touch-action: none; }
   .wd { padding: 2px 0; font-size: 11px; }
   .cell { min-height: 0; padding: 1px 1px 2px; }
-  .num { width: 19.5px; height: 19.5px; line-height: 19.5px; font-size: 11.9px; margin-bottom: 1px; } /* 下の余白のぶん、少し大きく（+8%） */
+  .num { width: 19.5px; height: 19.5px; line-height: 19.5px; font-size: 11.9px; font-weight: 700; margin-bottom: 1px; } /* 下の余白のぶん、少し大きく（+8%）して太字に */
   .chip.bar {
     height: 26px; /* 1行で済む予定も、2行分の高さにそろえる */
     font-size: 10.5px;
