@@ -495,3 +495,26 @@ dialog.page::backdrop { background: var(--bg); }
 #event-form .field { margin: 0; }
 #delete-btn { margin-top: 8px; padding: 10px; }
 #event-form.readonly .mini-cal { opacity: 0.85; }
+
+/* ---------- Googleの予定の変換 ---------- */
+.head-spacer { width: 40px; }
+.convert-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.convert-list { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.convert-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.convert-row input { width: 20px; height: 20px; margin-top: 2px; flex: none; }
+.convert-row.disabled { opacity: 0.5; cursor: default; }
+.convert-row .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.convert-row .when { font-size: 13px; color: var(--muted); }
+.convert-row .name { font-weight: 600; overflow-wrap: anywhere; }
+.convert-row .memo { font-size: 13px; white-space: pre-line; color: var(--muted); overflow-wrap: anywhere; }
+.convert-row .meta { font-size: 12px; color: var(--muted); }
+.convert-row .ok { color: #2f9e5b; font-weight: 600; }
+.convert-row .ng { color: var(--danger); font-weight: 600; }
+#convert-btn { margin: 4px 0 8px; }

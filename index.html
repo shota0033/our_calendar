@@ -13,8 +13,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=6">
-  <script type="module" src="app.js?v=6"></script>
+  <link rel="stylesheet" href="styles.css?v=8">
+  <script type="module" src="app.js?v=8"></script>
 </head>
 <body>
   <!-- ログイン画面 -->
@@ -123,6 +123,27 @@
     </form>
   </dialog>
 
+  <!-- Googleの予定をアプリ形式に変換（一度だけ使う） -->
+  <dialog id="convert-dialog" class="page">
+    <header class="page-head">
+      <button class="icon-btn" type="button" data-close aria-label="閉じる">×</button>
+      <h2>Googleの予定を変換</h2>
+      <span class="head-spacer"></span>
+    </header>
+    <div class="page-body">
+      <p id="convert-intro" class="muted small"></p>
+      <div class="convert-tools">
+        <span id="convert-count" class="muted small"></span>
+        <span class="spacer"></span>
+        <button id="convert-all-btn" class="btn" type="button">すべて選択</button>
+        <button id="convert-none-btn" class="btn" type="button">すべて解除</button>
+      </div>
+      <p id="convert-message" class="note" hidden></p>
+      <div id="convert-list" class="convert-list"></div>
+      <button id="convert-run-btn" class="btn primary block" type="button"></button>
+    </div>
+  </dialog>
+
   <!-- メニュー -->
   <dialog id="menu-dialog" class="sheet">
     <div class="sheet-head">
@@ -132,6 +153,7 @@
     <p id="menu-account" class="muted"></p>
     <h3 class="menu-heading">カレンダー</h3>
     <ul id="menu-calendars" class="legend"></ul>
+    <button id="convert-btn" class="btn block" type="button">Googleの予定をアプリ形式に変換</button>
     <div class="form-actions">
       <button id="reload-btn" class="btn" type="button">再読み込み</button>
       <span class="spacer"></span>
