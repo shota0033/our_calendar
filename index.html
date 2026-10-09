@@ -13,8 +13,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=16">
-  <script type="module" src="app.js?v=16"></script>
+  <link rel="stylesheet" href="styles.css?v=17">
+  <script type="module" src="app.js?v=17"></script>
 </head>
 <body>
   <!-- ログイン画面 -->
@@ -91,12 +91,12 @@
         <section id="event-times" class="block">
           <div class="time-row">
             <span>開始</span>
-            <div class="time-pick" data-time="startTime"><input name="startTime" type="hidden"><select name="startTime_h" aria-label="時"></select><span>:</span><select name="startTime_m" aria-label="分"></select></div>
+            <div class="time-pick" data-time="startTime" data-label="開始"><input name="startTime" type="hidden"><button name="startTime_btn" class="time-btn" type="button"></button></div>
             <button class="clear" type="button" data-clear="startTime" aria-label="開始の時刻を消す">×</button>
           </div>
           <div class="time-row">
             <span>終了</span>
-            <div class="time-pick" data-time="endTime"><input name="endTime" type="hidden"><select name="endTime_h" aria-label="時"></select><span>:</span><select name="endTime_m" aria-label="分"></select></div>
+            <div class="time-pick" data-time="endTime" data-label="終了"><input name="endTime" type="hidden"><button name="endTime_btn" class="time-btn" type="button"></button></div>
             <button class="clear" type="button" data-clear="endTime" aria-label="終了の時刻を消す">×</button>
           </div>
         </section>
@@ -104,7 +104,7 @@
         <section id="task-times" class="block">
           <div class="time-row">
             <span>期限の時刻</span>
-            <div class="time-pick" data-time="dueTime"><input name="dueTime" type="hidden"><select name="dueTime_h" aria-label="時"></select><span>:</span><select name="dueTime_m" aria-label="分"></select></div>
+            <div class="time-pick" data-time="dueTime" data-label="期限の時刻"><input name="dueTime" type="hidden"><button name="dueTime_btn" class="time-btn" type="button"></button></div>
             <button class="clear" type="button" data-clear="dueTime" aria-label="期限の時刻を消す">×</button>
           </div>
           <label id="done-wrap" class="check done-check"><input name="done" type="checkbox"> 完了</label>
@@ -120,6 +120,20 @@
         <button id="delete-btn" class="btn danger block" type="button">削除</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- 時刻を選ぶ（時と分を回して選ぶ。分は5分刻み） -->
+  <dialog id="time-dialog" class="sheet time-sheet">
+    <div class="time-sheet-head">
+      <button id="time-none-btn" class="btn" type="button">時刻なし</button>
+      <h2 id="time-title"></h2>
+      <button id="time-ok-btn" class="btn primary" type="button">決定</button>
+    </div>
+    <div class="wheels">
+      <div id="wheel-h" class="wheel" aria-label="時"></div>
+      <span class="wheel-colon">:</span>
+      <div id="wheel-m" class="wheel" aria-label="分"></div>
+    </div>
   </dialog>
 
   <!-- Googleの予定をアプリ形式に変換（一度だけ使う） -->

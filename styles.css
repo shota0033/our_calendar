@@ -512,8 +512,8 @@ dialog.page::backdrop { background: var(--bg); }
 
 .time-row { display: flex; align-items: center; gap: 8px; }
 .time-row > span { width: 5.5em; flex: none; color: var(--muted); font-size: 14px; }
-.time-pick { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
-.time-pick select,
+.time-pick { flex: 1; min-width: 0; display: flex; }
+.time-btn,
 .time-row input {
   flex: 1;
   min-width: 0;
@@ -535,6 +535,56 @@ dialog.page::backdrop { background: var(--bg); }
   font-size: 18px;
 }
 .hint { margin: 0; font-size: 12px; color: var(--muted); }
+.time-btn { text-align: left; font-variant-numeric: tabular-nums; }
+.time-btn.empty { color: var(--muted); }
+.time-btn:disabled { opacity: 0.8; background: var(--surface); }
+
+/* 時刻を選ぶ画面：時と分の2列を回して選ぶ */
+.time-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.time-sheet-head h2 { margin: 0; font-size: 17px; }
+.wheels {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+/* 真ん中の帯（選ばれている値） */
+.wheels::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: 36px;
+  transform: translateY(-50%);
+  background: var(--surface);
+  border-radius: 10px;
+  z-index: 0;
+}
+.wheel {
+  position: relative;
+  z-index: 1;
+  width: 96px;
+  height: 180px; /* 5行分 */
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding: 72px 0; /* 最初と最後の値も真ん中に来るように */
+  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+}
+.wheel::-webkit-scrollbar { display: none; }
+.wheel-item {
+  height: 36px;
+  line-height: 36px;
+  text-align: center;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  scroll-snap-align: center;
+  cursor: pointer;
+}
+.wheel-colon { position: relative; z-index: 1; font-size: 20px; font-weight: 600; }
 .done-check { font-weight: 600; }
 #event-form .note { white-space: pre-line; }
 #event-form .field { margin: 0; }
@@ -553,7 +603,7 @@ dialog.page::backdrop { background: var(--bg); }
   .mc-wd { padding: 0 0 2px; }
   .mc-day { height: 36px; font-size: 14px; } /* 月単位で表示するため、高さは少しだけ広げる */
   .mc-day span { width: 32px; height: 32px; line-height: 32px; }
-  .time-pick select, .time-row input { min-height: 38px; padding: 4px 10px; }
+  .time-btn, .time-row input { min-height: 38px; padding: 4px 10px; }
   .clear { width: 32px; height: 32px; }
   #event-form .note { margin: 0; font-size: 12px; }
   #delete-btn { margin-top: 0; padding: 8px; }
@@ -566,7 +616,7 @@ dialog.page::backdrop { background: var(--bg); }
   .mc-head .icon-btn { height: 28px; }
   .mc-day { height: 30px; }
   .mc-day span { width: 26px; height: 26px; line-height: 26px; }
-  .time-pick select, .time-row input { min-height: 34px; }
+  .time-btn, .time-row input { min-height: 34px; }
 }
 #event-form.readonly .mini-cal { opacity: 0.85; }
 

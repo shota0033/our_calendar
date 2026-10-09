@@ -1,8 +1,8 @@
 // 予定・タスクの追加と編集の画面（全画面）
-import { CONFIG } from './config.js?v=16';
-import * as store from './store.js?v=16';
-import * as D from './dates.js?v=16';
-import { h, $ } from './dom.js?v=16';
+import { CONFIG } from './config.js?v=17';
+import * as store from './store.js?v=17';
+import * as D from './dates.js?v=17';
+import { h, $ } from './dom.js?v=17';
 
 // 開いているフォームの情報
 let ctx = null; // { mode: 'new' | 'edit', event, readOnly, initialDescription }
@@ -32,6 +32,7 @@ export function initForm(callbacks) {
   }
   form.elements.multi.addEventListener('change', () => setMulti(form.elements.multi.checked));
   for (const pick of form.querySelectorAll('.time-pick')) initTimePick(pick);
+  initTimeDialog();
   for (const btn of form.querySelectorAll('[data-clear]')) {
     btn.addEventListener('click', () => setTime(btn.dataset.clear, ''));
   }
@@ -40,42 +41,92 @@ export function initForm(callbacks) {
   $('#event-dialog').addEventListener('close', () => { ctx = null; draft = null; });
 }
 
-/* ---------- 時刻の入力（時と分を選ぶ。分は5分刻み） ---------- */
+/* ---------- 時刻の入力（時と分を回して選ぶ。分は5分刻み） ---------- */
+// iPhoneの標準の時刻入力は5分刻みにできないため、同じような画面をアプリで作っている
 
 const pad2 = (n) => String(n).padStart(2, '0');
+const WHEEL_ITEM_H = 36; // styles.css の .wheel-item の高さ
+let timeTarget = null; // 選んでいる欄（'startTime' など）
 
-// 時・分の選択肢を作り、選んだら隠しの入力欄（name=startTime など）に「HH:MM」を入れる
 function initTimePick(pick) {
   const name = pick.dataset.time;
+  els()[`${name}_btn`].addEventListener('click', () => openTimeDialog(name, pick.dataset.label));
+}
+
+function initTimeDialog() {
+  $('#time-ok-btn').addEventListener('click', () => {
+    const hh = wheelValue($('#wheel-h'));
+    const mm = wheelValue($('#wheel-m'));
+    setTime(timeTarget, `${hh}:${mm}`);
+    $('#time-dialog').close();
+  });
+  $('#time-none-btn').addEventListener('click', () => {
+    setTime(timeTarget, '');
+    $('#time-dialog').close();
+  });
+  // 外側をタップしたら、変えずに閉じる
+  $('#time-dialog').addEventListener('click', (e) => {
+    const r = $('#time-dialog').getBoundingClientRect();
+    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (!inside) $('#time-dialog').close();
+  });
+}
+
+// 最初に表示する時刻：入っていればその時刻、終了は開始の1時間後、それ以外は12:00
+function initialTime(name) {
   const e = els();
-  const hour = e[`${name}_h`];
-  const minute = e[`${name}_m`];
-  hour.replaceChildren(h('option', { value: '' }, '--'),
-    ...Array.from({ length: 24 }, (_, i) => h('option', { value: pad2(i) }, `${i}時`)));
-  minute.replaceChildren(h('option', { value: '' }, '--'),
-    ...Array.from({ length: 12 }, (_, i) => h('option', { value: pad2(i * 5) }, `${pad2(i * 5)}分`)));
-  const sync = () => {
-    // 時を選んで分が空なら00分にする。時が空なら時刻なし
-    if (hour.value && !minute.value) minute.value = '00';
-    e[name].value = hour.value ? `${hour.value}:${minute.value}` : '';
-  };
-  hour.addEventListener('change', sync);
-  minute.addEventListener('change', sync);
+  if (e[name].value) return e[name].value;
+  if (name === 'endTime' && e.startTime.value) {
+    const [hh, mm] = e.startTime.value.split(':').map(Number);
+    return `${pad2(Math.min(hh + 1, 23))}:${pad2(mm)}`;
+  }
+  return '12:00';
+}
+
+function openTimeDialog(name, label) {
+  if (ctx?.readOnly) return;
+  timeTarget = name;
+  const [hh, mm] = initialTime(name).split(':');
+  const minutes = Array.from({ length: 12 }, (_, i) => pad2(i * 5));
+  // 5分刻みでない時刻（Googleで入れた 23:59 など）は、その分も選べるようにする
+  if (!minutes.includes(mm)) {
+    minutes.push(mm);
+    minutes.sort();
+  }
+  $('#time-title').textContent = label;
+  fillWheel($('#wheel-h'), Array.from({ length: 24 }, (_, i) => pad2(i)), (v) => `${Number(v)}時`);
+  fillWheel($('#wheel-m'), minutes, (v) => `${v}分`);
+  $('#time-dialog').showModal();
+  scrollWheel($('#wheel-h'), hh, false);
+  scrollWheel($('#wheel-m'), mm, false);
+}
+
+function fillWheel(wheel, values, text) {
+  wheel.replaceChildren(...values.map((v) => h('div', {
+    class: 'wheel-item',
+    'data-value': v,
+    onclick: () => scrollWheel(wheel, v, true),
+  }, text(v))));
+}
+
+function scrollWheel(wheel, value, smooth) {
+  const i = [...wheel.children].findIndex((el) => el.dataset.value === value);
+  wheel.scrollTo({ top: Math.max(0, i) * WHEEL_ITEM_H, behavior: smooth ? 'smooth' : 'instant' });
+}
+
+// 真ん中の帯に入っている値
+function wheelValue(wheel) {
+  const i = Math.round(wheel.scrollTop / WHEEL_ITEM_H);
+  const items = wheel.children;
+  return items[Math.min(Math.max(i, 0), items.length - 1)].dataset.value;
 }
 
 function setTime(name, value) {
   const e = els();
-  const [hh = '', mm = ''] = value ? value.split(':') : [];
-  const minute = e[`${name}_m`];
-  // 5分刻みでない時刻（Googleで入れた予定など）は、その分も選べるようにする
-  if (mm && ![...minute.options].some((o) => o.value === mm)) {
-    const option = h('option', { value: mm }, `${mm}分`);
-    const next = [...minute.options].find((o) => o.value > mm);
-    minute.insertBefore(option, next || null);
-  }
-  e[`${name}_h`].value = hh;
-  minute.value = mm;
   e[name].value = value || '';
+  const btn = e[`${name}_btn`];
+  btn.textContent = value ? `${Number(value.slice(0, 2))}:${value.slice(3)}` : '--:--';
+  btn.classList.toggle('empty', !value);
 }
 
 export function isOpen() {
