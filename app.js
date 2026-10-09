@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=21';
-import * as auth from './auth.js?v=21';
-import * as store from './store.js?v=21';
-import * as D from './dates.js?v=21';
-import * as form from './form.js?v=21';
-import * as convert from './convert.js?v=21';
-import { h, $ } from './dom.js?v=21';
+import { CONFIG } from './config.js?v=22';
+import * as auth from './auth.js?v=22';
+import * as store from './store.js?v=22';
+import * as D from './dates.js?v=22';
+import * as form from './form.js?v=22';
+import * as convert from './convert.js?v=22';
+import { h, $ } from './dom.js?v=22';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -119,7 +119,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=21').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=22').catch((err) => console.warn(err));
   }
 }
 
@@ -272,8 +272,13 @@ function renderChrome() {
   for (const btn of document.querySelectorAll('#filters button')) {
     btn.setAttribute('aria-pressed', String(state.filter.includes(btn.dataset.person)));
   }
-  $('#add-btn').hidden = state.offline || (store.calendars.length > 0 && !store.saveCalendar());
+  // 月の表示では「＋」ボタンを出さない（右下の日付が隠れるため）。日付をタップして「この日に予定を追加」から追加する
+  $('#add-btn').hidden = !canAdd() || isMonth;
   renderBanner();
+}
+
+function canAdd() {
+  return !state.offline && !(store.calendars.length > 0 && !store.saveCalendar());
 }
 
 function renderBanner() {
@@ -484,7 +489,7 @@ function renderList() {
 function openDay(key) {
   dayDialogKey = key;
   renderDayDialog(key);
-  $('#day-add-btn').hidden = $('#add-btn').hidden;
+  $('#day-add-btn').hidden = !canAdd();
   $('#day-dialog').showModal();
 }
 

@@ -1,5 +1,5 @@
 // Google Calendar API の呼び出し
-import { getToken, invalidateToken } from './auth.js?v=21';
+import { getToken, invalidateToken } from './auth.js?v=22';
 
 const BASE = 'https://www.googleapis.com/calendar/v3';
 

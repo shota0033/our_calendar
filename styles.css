@@ -190,6 +190,7 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
   color: var(--muted);
   padding: 4px 0;
   border-bottom: 1px solid var(--line);
+  font-weight: 700;
 }
 .wd.sun { color: var(--sun); }
 .wd.sat { color: var(--sat); }

@@ -1,11 +1,11 @@
 // Googleカレンダーの予定を、アプリ形式の予定に変換する画面（一度だけ使う）。
 // 変換：抽出した「タイトル・日付・時間・メモ」で新しいアプリ形式の予定（🐟）を作り、
 // 元の予定には「変換済み」の印（ocConverted）だけを付けてアプリに表示しない。元の予定は削除しない。
-import { CONFIG } from './config.js?v=21';
-import * as store from './store.js?v=21';
-import * as D from './dates.js?v=21';
-import { fieldsFromEvent } from './form.js?v=21';
-import { h, $ } from './dom.js?v=21';
+import { CONFIG } from './config.js?v=22';
+import * as store from './store.js?v=22';
+import * as D from './dates.js?v=22';
+import { fieldsFromEvent } from './form.js?v=22';
+import { h, $ } from './dom.js?v=22';
 
 const PERSON = 'fish'; // 10月以降のGoogleの予定は、すべて彼女のもの
 const TO_KEY = '2028-01-01'; // 2027年12月末まで
