@@ -274,10 +274,16 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
   .more { height: 14px; line-height: 14px; }
 
   /* 上部バーの余白も詰める */
-  .actions { padding: 4px 0; }
-  .subbar { padding: 0 4px 4px; }
-  .filter-btn { height: 30px; font-size: 18px; }
-  .view-seg button { padding: 3px 10px; }
+  /* 上部バーを1段にする：月の移動・猫と魚・月/一覧・メニュー */
+  :root { --topbar-h: 52px; }
+  .topbar { flex-wrap: nowrap; gap: 4px; }
+  .subbar { display: contents; }
+  .nav { order: 1; flex: 1; }
+  .filters { order: 2; gap: 4px; }
+  .view-seg { order: 3; }
+  .actions { order: 4; padding: 4px 0; }
+  .filter-btn { width: 36px; height: 30px; font-size: 17px; }
+  .view-seg button { padding: 3px 8px; }
 }
 
 @media (min-width: 600px) {
