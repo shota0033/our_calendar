@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=13';
-import * as auth from './auth.js?v=13';
-import * as store from './store.js?v=13';
-import * as D from './dates.js?v=13';
-import * as form from './form.js?v=13';
-import * as convert from './convert.js?v=13';
-import { h, $ } from './dom.js?v=13';
+import { CONFIG } from './config.js?v=14';
+import * as auth from './auth.js?v=14';
+import * as store from './store.js?v=14';
+import * as D from './dates.js?v=14';
+import * as form from './form.js?v=14';
+import * as convert from './convert.js?v=14';
+import { h, $ } from './dom.js?v=14';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -119,7 +119,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=13').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=14').catch((err) => console.warn(err));
   }
 }
 
@@ -348,22 +348,24 @@ function isHolidayEvent(ev) {
 
 // 1マスに表示する帯の数。スマホでは、マスの高さに入るだけ表示する（少なくとも3件）
 // all: すべて帯で表示できる数、withMore: 「他n件」を出すときの帯の数
-function chipsPerCell(weeks) {
+// rowH: マスの高さ（実際に表示した高さ。わからなければ画面の高さから見積もる）
+function chipsPerCell(weeks, rowH) {
   if (window.innerWidth >= 600) {
     const n = window.innerWidth >= 900 ? 5 : 3;
     return { all: n, withMore: n };
   }
-  // styles.css のスマホ用の値：日付 19px＋余白 3px、帯 28px（2行＋間隔）、「他n件」13px、最低の行の高さ 106px
-  const top = document.documentElement.style.getPropertyValue('--month-top');
-  const monthH = window.innerHeight - (parseFloat(top) || 120) - 20; // 20: 曜日の行
-  const rowH = Math.max(106, monthH / weeks);
+  // styles.css のスマホ用の値：日付 19px＋余白 3px、帯 29px（2行 26px＋間隔 3px）、「他n件」12px
+  if (!rowH) {
+    const top = document.documentElement.style.getPropertyValue('--month-top');
+    rowH = (window.innerHeight - (parseFloat(top) || 120) - 20) / weeks; // 20: 曜日の行
+  }
   return {
-    all: Math.max(3, Math.floor((rowH - 22) / 28)),
-    withMore: Math.max(2, Math.floor((rowH - 22 - 13) / 28)),
+    all: Math.max(1, Math.floor((rowH - 22 + 3) / 29)),
+    withMore: Math.max(1, Math.floor((rowH - 22 - 12) / 29)),
   };
 }
 
-function renderMonth() {
+function renderMonth(rowH) {
   // スマホで月のカレンダーを画面の下まで広げるため、上部バーなどの高さを渡す
   const top = $('#main').getBoundingClientRect().top + window.scrollY;
   document.documentElement.style.setProperty('--month-top', `${Math.round(top)}px`);
@@ -376,7 +378,7 @@ function renderMonth() {
   const end = D.addDays(start, weeks * 7);
   const byDay = groupByDay(visibleEvents(), start, end);
   const today = D.todayKey();
-  const maxChips = chipsPerCell(weeks);
+  const maxChips = chipsPerCell(weeks, rowH);
   const canHover = matchMedia('(hover: hover)').matches;
 
   const head = D.WEEKDAYS.map((w, i) =>
@@ -413,6 +415,13 @@ function renderMonth() {
   }
 
   $('#main').replaceChildren(h('div', { class: 'month', style: { '--weeks': weeks } }, head, cells));
+
+  // 見積もりと実際のマスの高さで入る数が違ったら、実際の高さで描き直す
+  if (!rowH && window.innerWidth < 600) {
+    const actual = $('#main .cell')?.getBoundingClientRect().height;
+    const fit = actual && chipsPerCell(weeks, actual);
+    if (fit && (fit.all !== maxChips.all || fit.withMore !== maxChips.withMore)) renderMonth(actual);
+  }
 }
 
 function timeText(ev) {

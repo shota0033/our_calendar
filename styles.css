@@ -235,22 +235,25 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 .dot { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; }
 .more { font-size: 10px; color: var(--muted); padding-left: 2px; }
 
-/* スマホ：月のカレンダーを画面の下まで広げ、帯を2行にする（1マスに帯6行＝3件が目安） */
+/* スマホ：月のカレンダーを画面にちょうど収め、帯を2行にする（1マスに帯6行＝3件が目安） */
 @media (max-width: 599px) {
-  main:has(.month) { padding-bottom: env(safe-area-inset-bottom); }
+  main:has(.month) { padding-bottom: 0; }
   .month {
-    grid-template-rows: auto repeat(var(--weeks, 6), minmax(106px, 1fr));
-    min-height: calc(100dvh - var(--month-top, 120px) - env(safe-area-inset-bottom));
+    grid-template-rows: auto repeat(var(--weeks, 6), minmax(0, 1fr));
+    height: calc(100dvh - var(--month-top, 120px) - env(safe-area-inset-bottom));
   }
+  /* 月のカレンダーは画面に収まっているので、上下にスワイプしても画面を動かさない
+     （左右のスワイプで月を移る処理は app.js。予定の画面などのダイアログは #app の外なので影響しない） */
+  html:has(.month), body:has(.month) { overflow: hidden; overscroll-behavior: none; }
+  #app:has(.month) { touch-action: none; }
   .wd { padding: 2px 0; font-size: 11px; }
   .cell { min-height: 0; padding: 1px 1px 2px; }
   .num { width: 18px; height: 18px; line-height: 18px; font-size: 11px; margin-bottom: 1px; }
   .chip.bar {
-    height: auto;
-    max-height: 26px;
+    height: 26px; /* 1行で済む予定も、2行分の高さにそろえる */
     font-size: 10.5px;
     line-height: 13px;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
     padding: 0 2px;
     white-space: normal;
     word-break: break-all;
