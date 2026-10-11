@@ -73,7 +73,7 @@
 - [x] GAS：`PUSH_URL` があれば Worker の `/send` に2人分送る
 - [x] アプリ（ヘッドレスChrome）：設定画面に「通知」と「このデバイスで通知を受け取る」が出る
 - [x] Cloudflare に Worker を置いた（https://oc-push.chibikurocat4.workers.dev）。`/vapid` が同じ鍵を返す（KV がつながっている）、合言葉なしの `/send` を断る、アプリのサイトからの CORS が通る。`config.js` の `pushUrl` に入れて v30 に
-- [ ] iPhone での確認（受け取りの登録、通知が届く、タップでアプリが開く）
+- [x] iPhone での確認（2人とも受け取りを登録、setup の試しの通知がアプリから届き、タップでアプリが開いた）。ntfy は GAS の送信元が共有のため1日の上限（429）にすぐ達するので、やめた（TOPIC_* を削除）
 
 ---
 
