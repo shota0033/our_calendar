@@ -42,7 +42,7 @@ export const CONFIG = {
   hideGoogleEventsBefore: '2026-10-01',
 
   // 通知の中継（worker/push.js を置いた Cloudflare Workers のURL。最後の / は付けない）。空なら通知の設定を出さない
-  pushUrl: '',
+  pushUrl: 'https://oc-push.chibikurocat4.workers.dev',
 
   // 一覧表示で最初に読み込む日数（「さらに表示」で同じ日数ずつ延びる）
   listDays: 30,

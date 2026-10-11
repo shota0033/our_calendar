@@ -9,6 +9,7 @@
 ### 公開状況
 - 公開URL：https://shota0033.github.io/our_calendar/
 - GitHubにあるのは v29（年のカレンダー）
+- 手元に v30（通知の受け取り。gas/ と worker/ を含む）。まだ送っていない
 - GitHubへの送信はClaudeが `git push` で行う。ただし、ユーザーが「送って」と言ったときだけ（2026-10-09〜）
   - それまでは手元でコミットまでにとどめる
   - 送ったあと、GitHub Pages の更新が終わり、公開ページの版番号が上がったことを確認する
@@ -45,7 +46,7 @@
 - 使い心地しだいで変えるかもしれないこと：6週の月で、過去の月は月初の段を前の月に回すルール（`dropFirstWeek`）
 
 ### 作業の約束ごと
-- 更新を公開するときは `sh bump-version.sh <番号>` で版番号を上げる（今は v29。次は 30）
+- 更新を公開するときは `sh bump-version.sh <番号>` で版番号を上げる（今は v30。次は 31）
 - キャッシュの形式を変えたら、`store.js` の `CACHE_SCHEMA` を上げる（今は 6）
 - テストは、偽のAPIを使ってヘッドレスChromeで行っている
   - 古いキャッシュが残った状態のテストも行うこと（v6の不具合は、これをしていなかったため見逃した）
@@ -72,7 +73,8 @@
 - [x] Worker（Node.js、偽の KV・Google・プッシュサーバー）：受け取り先の登録、他のアカウントや無効なトークンを断る、合言葉なしの送信を断る、届いた中身を受け取り側の鍵で復号して一致、VAPID の署名が正しい、410 の受け取り先を消す、解除、CORS
 - [x] GAS：`PUSH_URL` があれば Worker の `/send` に2人分送る
 - [x] アプリ（ヘッドレスChrome）：設定画面に「通知」と「このデバイスで通知を受け取る」が出る
-- [ ] 本物の Cloudflare・iPhone での確認（ユーザーに設定してもらう。手順は worker/README.md）。Worker の URL を受け取ったら `config.js` の `pushUrl` に入れ、版番号を上げて公開する
+- [x] Cloudflare に Worker を置いた（https://oc-push.chibikurocat4.workers.dev）。`/vapid` が同じ鍵を返す（KV がつながっている）、合言葉なしの `/send` を断る、アプリのサイトからの CORS が通る。`config.js` の `pushUrl` に入れて v30 に
+- [ ] iPhone での確認（受け取りの登録、通知が届く、タップでアプリが開く）
 
 ---
 
