@@ -1,7 +1,7 @@
 // カレンダーと予定の読み込み・保存、オフライン用のキャッシュ
-import { CONFIG } from './config.js?v=30';
-import * as api from './api.js?v=30';
-import * as D from './dates.js?v=30';
+import { CONFIG } from './config.js?v=31';
+import * as api from './api.js?v=31';
+import * as D from './dates.js?v=31';
 
 // キャッシュの形式を変えたら CACHE_SCHEMA を上げる。古い形式のキャッシュは読まずに捨てる
 // （古い形式の予定を表示しようとして画面が止まるのを防ぐため）。
@@ -135,6 +135,27 @@ function isHiddenEvent(ev, cal) {
   if (overridden.has(D.sourceKey(cal.id, ev.id))) return true;
   const before = CONFIG.hideGoogleEventsBefore;
   return !!before && !ev.appFormat && !cal.holiday && ev.endKey < before;
+}
+
+/* ---------- 相手が入れた予定 ---------- */
+
+// sinceMs 以降に、me でない人のカレンダーに追加された予定（アプリ以外から入ったものも含む）。
+// プッシュ通知（gas/notify.gs）と同じく、アプリの「書き換え」でできた予定・非表示の印・変換済みの印・
+// 繰り返しの予定の1回分の変更は除き、タスクは me が対象のものだけにする
+export async function findPartnerNews(sinceMs, me) {
+  const targets = calendars.filter((c) => c.person && c.person !== me && !c.holiday);
+  const lists = await Promise.all(targets.map(async (cal) => {
+    const items = await api.listUpdated(cal.id, new Date(sinceMs).toISOString());
+    return items
+      .filter((e) => {
+        const shared = e.extendedProperties?.shared || {};
+        return e.status !== 'cancelled' && e.start && e.created && Date.parse(e.created) >= sinceMs &&
+          !e.recurringEventId && !shared.ocSource && shared.ocHidden !== '1' && shared.ocConverted !== '1';
+      })
+      .map((e) => D.normalizeEvent(e, cal, PERSONS))
+      .filter((ev) => ev.kind !== 'task' || ev.persons.includes(me));
+  }));
+  return sortEvents(lists.flat());
 }
 
 /* ---------- Googleの予定をアプリ形式に変換（一度だけ使う） ---------- */

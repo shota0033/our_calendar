@@ -13,8 +13,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=30">
-  <script type="module" src="app.js?v=30"></script>
+  <link rel="stylesheet" href="styles.css?v=31">
+  <script type="module" src="app.js?v=31"></script>
 </head>
 <body>
   <!-- ログイン画面 -->
@@ -60,6 +60,16 @@
     </div>
     <div id="day-events" class="day-events"></div>
     <button id="day-add-btn" class="btn primary block" type="button">この日に予定を追加</button>
+  </dialog>
+
+  <!-- 相手が入れた予定のお知らせ -->
+  <dialog id="news-dialog" class="sheet">
+    <div class="sheet-head">
+      <h2 id="news-title"></h2>
+      <button class="icon-btn" type="button" data-close aria-label="閉じる">×</button>
+    </div>
+    <div id="news-events" class="day-events"></div>
+    <button class="btn primary block" type="button" data-close>OK</button>
   </dialog>
 
   <!-- 予定・タスクの追加と編集（全画面） -->

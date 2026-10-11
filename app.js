@@ -1,16 +1,17 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=30';
-import * as auth from './auth.js?v=30';
-import * as store from './store.js?v=30';
-import * as D from './dates.js?v=30';
-import * as form from './form.js?v=30';
-import * as convert from './convert.js?v=30';
-import * as notify from './notify.js?v=30';
-import { h, $ } from './dom.js?v=30';
+import { CONFIG } from './config.js?v=31';
+import * as auth from './auth.js?v=31';
+import * as store from './store.js?v=31';
+import * as D from './dates.js?v=31';
+import * as form from './form.js?v=31';
+import * as convert from './convert.js?v=31';
+import * as notify from './notify.js?v=31';
+import { h, $ } from './dom.js?v=31';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
 const KEY_FILTER = 'oc.filter';
+const KEY_NEWS_SEEN = 'oc.newsSeenAt';
 
 // トークンの残りがこれより短ければ、先に取り直す
 const REFRESH_BEFORE_EDIT_MS = 10 * 60 * 1000;
@@ -80,12 +81,12 @@ function init() {
 
   showApp();
   refresh({ reloadCalendars: true }).then(resumeAfterLogin)
-    .then(() => notify.resendIfNeeded()).catch((err) => console.warn(err));
+    .then(() => { checkPartnerNews(); return notify.resendIfNeeded(); }).catch((err) => console.warn(err));
 
   setInterval(poll, POLL_MS);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
-    if (!maybeRefreshToken(REFRESH_ON_RETURN_MS)) refresh();
+    if (!maybeRefreshToken(REFRESH_ON_RETURN_MS)) refresh().then(checkPartnerNews);
   });
   window.addEventListener('online', () => { state.offline = false; refresh(); });
   window.addEventListener('offline', () => { state.offline = true; renderChrome(); });
@@ -125,7 +126,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=30').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=31').catch((err) => console.warn(err));
   }
 }
 
@@ -612,6 +613,60 @@ function renderDayDialog(key) {
   $('#day-events').replaceChildren(...(events.length
     ? events.map(eventRow)
     : [h('p', { class: 'empty' }, '予定はありません')]));
+}
+
+/* ---------- 相手が入れた予定のお知らせ ---------- */
+
+// アプリを開いたとき（戻ってきたときも）、前回確かめたあとに相手が入れた予定があれば、小さな画面で知らせる。
+// 一度確かめた分は二度出さない。このデバイスで初めて使うときは、その時点から数える
+let newsBusy = false;
+async function checkPartnerNews() {
+  const me = store.ownerPerson();
+  if (newsBusy || !me || !auth.getToken() || !navigator.onLine) return;
+  if (document.querySelector('dialog[open]')) return; // 入力中などは、次に開いたときに出す
+  const since = load(KEY_NEWS_SEEN);
+  const now = Date.now();
+  if (!since) { save(KEY_NEWS_SEEN, now); return; }
+  newsBusy = true;
+  try {
+    const events = await store.findPartnerNews(since, me);
+    save(KEY_NEWS_SEEN, now);
+    if (events.length && !document.querySelector('dialog[open]')) showNews(events);
+  } catch (err) {
+    console.warn('相手が入れた予定を確かめられませんでした', err);
+  } finally {
+    newsBusy = false;
+  }
+}
+
+function showNews(events) {
+  const by = store.calendarById(events[0].calendarId)?.person;
+  const p = CONFIG.people[by];
+  const what = events.every((ev) => ev.kind === 'task') ? 'タスク' : '予定';
+  $('#news-title').textContent =
+    `${p.icon} ${p.nickname || p.label}が${what}を${events.length > 1 ? `${events.length}件` : ''}入れました`;
+  $('#news-events').replaceChildren(...events.map((ev) => h('button', {
+    class: 'event-row news-row',
+    type: 'button',
+    onclick: () => showNewsDay(ev.startKey),
+  },
+  h('i', { class: 'bar', style: { background: eventColor(ev) } }),
+  h('span', { class: 'time' }, `${D.formatShort(ev.startKey)}（${D.WEEKDAYS[D.weekday(ev.startKey)]}）\n${timeText(ev)}`),
+  h('span', { class: 'body' },
+    h('span', { class: 'name' }, displayTitle(ev)),
+    h('span', { class: 'cal' }, personIcons(ev))))));
+  $('#news-dialog').showModal();
+}
+
+// お知らせの予定をタップしたら、その日の月のカレンダーに移って、その日の予定を開く
+function showNewsDay(key) {
+  $('#news-dialog').close();
+  const { y, m } = D.parts(key);
+  state.view = 'month';
+  state.month = D.monthKey(y, m);
+  saveView();
+  refresh();
+  openDay(key);
 }
 
 /* ---------- 予定フォーム ---------- */

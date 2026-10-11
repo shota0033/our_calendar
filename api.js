@@ -1,5 +1,5 @@
 // Google Calendar API の呼び出し
-import { getToken, invalidateToken } from './auth.js?v=30';
+import { getToken, invalidateToken } from './auth.js?v=31';
 
 const BASE = 'https://www.googleapis.com/calendar/v3';
 
@@ -82,6 +82,15 @@ export function listOverrides(calendarId) {
   return listAll(`/calendars/${encodeURIComponent(calendarId)}/events`, {
     sharedExtendedProperty: 'ocOverride=1',
     maxResults: 2500,
+  });
+}
+
+// updatedMin 以降に作られた・変わった予定（繰り返しの予定は展開しない）。相手が入れた予定を探すのに使う
+export function listUpdated(calendarId, updatedMin) {
+  return listAll(`/calendars/${encodeURIComponent(calendarId)}/events`, {
+    updatedMin,
+    showDeleted: 'false',
+    maxResults: 250,
   });
 }
 

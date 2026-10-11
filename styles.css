@@ -405,6 +405,9 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 .event-row .body { display: flex; flex-direction: column; min-width: 0; }
 .event-row .name { overflow-wrap: anywhere; }
 .event-row .cal { font-size: 12px; color: var(--muted); }
+/* 相手が入れた予定のお知らせ：時刻の欄に日付と時刻を2行で出す */
+.news-row .time { white-space: pre-line; }
+#news-events { max-height: 55vh; overflow-y: auto; }
 
 /* ---------- 追加ボタン ---------- */
 .fab {
