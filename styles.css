@@ -475,6 +475,7 @@ dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.35); }
 .menu-heading { font-size: 14px; color: var(--muted); margin: 12px 0 4px; }
 .settings-section .menu-heading { margin-top: 0; }
 .settings-section p { margin: 4px 0 0; }
+.push-btn { margin-top: 8px; }
 .owner-seg { display: flex; width: 100%; }
 .owner-seg button { flex: 1; padding: 8px 4px; white-space: nowrap; }
 .settings-icon { font-size: 22px; }

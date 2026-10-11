@@ -53,6 +53,29 @@
 
 ---
 
+## 2026-10-11 通知をタップしたらアプリが開くようにする（Web Push、worker/）
+
+### ユーザーの要望
+- ntfy の通知をタップすると、ブラウザ（Safari）でカレンダーが開く。アプリで開くようにしてほしい
+
+### 決めたこと（ユーザーの了承済み・案A）
+- iPhoneでは別のアプリからホーム画面のWebアプリを開けないため、アプリ自体が通知を受け取る形（Web Push）にした
+- 中継：Cloudflare Workers（無料）＋ KV。`worker/push.js`
+  - 受け取り先の登録は、アプリのGoogleのアクセストークンで確かめる（tokeninfo でこのアプリのトークンか、メインカレンダーのIDのハッシュで2人のどちらか）
+  - 署名用の鍵（VAPID）は Worker が最初に作って KV に保存する。GAS から Worker へは合言葉（SEND_SECRET）で頼む
+  - 暗号化は RFC 8291（aes128gcm）、署名は RFC 8292（ES256）を WebCrypto で書いた
+- アプリ：設定画面に「通知」を追加（`notify.js`）。`config.js` の `pushUrl` が空なら出さない。`sw.js` で通知を表示し、タップで開いているアプリを前に出す（なければ開く）
+- GAS：`PUSH_URL` と `PUSH_SECRET` があればアプリに送る。ntfy は `TOPIC_*` が残っている間は並行して送る（リンクは外した）
+- 合言葉はチャットで伝え、リポジトリには書かない
+
+### 確認したこと
+- [x] Worker（Node.js、偽の KV・Google・プッシュサーバー）：受け取り先の登録、他のアカウントや無効なトークンを断る、合言葉なしの送信を断る、届いた中身を受け取り側の鍵で復号して一致、VAPID の署名が正しい、410 の受け取り先を消す、解除、CORS
+- [x] GAS：`PUSH_URL` があれば Worker の `/send` に2人分送る
+- [x] アプリ（ヘッドレスChrome）：設定画面に「通知」と「このデバイスで通知を受け取る」が出る
+- [ ] 本物の Cloudflare・iPhone での確認（ユーザーに設定してもらう。手順は worker/README.md）。Worker の URL を受け取ったら `config.js` の `pushUrl` に入れ、版番号を上げて公開する
+
+---
+
 ## 2026-10-11 通知を追加（Google Apps Script ＋ ntfy、gas/）
 
 ### ユーザーの要望

@@ -21,7 +21,9 @@
 | `config.js` | **設定（クライアントID、猫と魚のカレンダー、色と名前）** |
 | `privacy.html` | プライバシーポリシー（Googleのブランディング設定用） |
 | `sw.js` / `manifest.webmanifest` / `icons/` | PWA用のファイル |
-| `gas/` | 通知（毎朝の予定・相手が追加した予定）。Google Apps Script で動かす。設定は `gas/README.md` |
+| `notify.js` | 通知の受け取り（設定画面の「このデバイスで通知を受け取る」） |
+| `gas/` | 通知を送る（毎朝の予定・相手が追加した予定）。Google Apps Script で動かす。設定は `gas/README.md` |
+| `worker/` | 通知の中継（Web Push）。Cloudflare Workers で動かす。設定は `worker/README.md` |
 
 ## ログインのしくみ
 

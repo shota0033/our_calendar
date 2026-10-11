@@ -3,11 +3,11 @@
 //   1. 毎朝6時：今日の全員の予定と、自分のタスク（期限の5日前・2日前・1日前・当日）
 //   2. 相手が予定を追加したとき：もう1人に知らせる（タスクは、対象の人にだけ）
 // 設定のしかたは gas/README.md を参照。
-// 通知の受け取り先（ntfy のトピック名）は、公開しないよう「スクリプト プロパティ」に入れる：
-//   TOPIC_cat … 🐱 の受け取り先、TOPIC_fish … 🐟 の受け取り先
+// 送り先は、公開しないよう「スクリプト プロパティ」に入れる（どちらか、または両方）：
+//   PUSH_URL, PUSH_SECRET … カレンダーのアプリへの通知（worker/push.js の URL と合言葉）。タップするとアプリが開く
+//   TOPIC_cat, TOPIC_fish … ntfy の受け取り先（🐱・🐟）。使わなくなったら消してよい
 
 const TZ = 'Asia/Tokyo';
-const APP_URL = 'https://shota0033.github.io/our_calendar/';
 const NTFY_URL = 'https://ntfy.sh/';
 
 // 毎朝の通知の時刻（時）。この時刻から DAILY_UNTIL_HOUR 時までの間に1回だけ送る
@@ -39,7 +39,8 @@ const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
 /* ---------- 入口 ---------- */
 
-// 最初に1回だけ実行する：5分ごとのトリガーを作り、見つかったカレンダーを記録し、試しの通知を送る
+// 最初に1回だけ実行する（送り先を変えたときも、もう一度実行してよい）：
+// 5分ごとのトリガーを作り、見つかったカレンダーを記録し、試しの通知を送る
 function setup() {
   for (const t of ScriptApp.getProjectTriggers()) {
     if (t.getHandlerFunction() === 'tick') ScriptApp.deleteTrigger(t);
@@ -49,8 +50,9 @@ function setup() {
   for (const cal of loadCalendars()) {
     console.log(`${cal.person ? PEOPLE[cal.person].icon : '　'} ${cal.name}${cal.holiday ? '（祝日）' : ''}`);
   }
-  for (const p of PERSONS) {
-    if (!topicOf(p)) throw new Error(`スクリプト プロパティに TOPIC_${p} がありません`);
+  const props = PropertiesService.getScriptProperties();
+  if (!(props.getProperty('PUSH_URL') && props.getProperty('PUSH_SECRET')) && !PERSONS.every(topicOf)) {
+    throw new Error('スクリプト プロパティに、PUSH_URL と PUSH_SECRET（または TOPIC_cat と TOPIC_fish）を入れてください');
   }
   checkNewEvents(); // 最初は、今ある予定を覚えるだけ（通知しない）
   for (const p of PERSONS) send(p, '通知の設定ができました', `${PEOPLE[p].icon} ${PEOPLE[p].nickname}のスマホに届いています`);
@@ -335,19 +337,42 @@ function notifyNewEvent(ev) {
   for (const p of to) send(p, title, `${when}\n${who} ${ev.title}`);
 }
 
-/* ---------- ntfy ---------- */
+/* ---------- 送る（アプリへの通知・ntfy） ---------- */
 
 function topicOf(person) {
   return PropertiesService.getScriptProperties().getProperty(`TOPIC_${person}`);
 }
 
 function send(person, title, message) {
+  sendPush(person, title, message);
+  sendNtfy(person, title, message);
+}
+
+// カレンダーのアプリへの通知（worker/push.js に頼む）
+function sendPush(person, title, body) {
+  const props = PropertiesService.getScriptProperties();
+  const url = props.getProperty('PUSH_URL');
+  const secret = props.getProperty('PUSH_SECRET');
+  if (!url || !secret) return;
+  const res = UrlFetchApp.fetch(`${url.replace(/\/+$/, '')}/send`, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: `Bearer ${secret}` },
+    payload: JSON.stringify({ person, title, body }),
+    muteHttpExceptions: true,
+  });
+  const text = res.getContentText();
+  if (res.getResponseCode() >= 300) console.warn(`アプリへの通知を送れませんでした（${res.getResponseCode()}）`, text);
+  else console.log(`${PEOPLE[person].icon} アプリへの通知`, text);
+}
+
+function sendNtfy(person, title, message) {
   const topic = topicOf(person);
   if (!topic) return;
   const res = UrlFetchApp.fetch(NTFY_URL, {
     method: 'post',
     contentType: 'application/json',
-    payload: JSON.stringify({ topic, title, message, click: APP_URL }),
+    payload: JSON.stringify({ topic, title, message }),
     muteHttpExceptions: true,
   });
   if (res.getResponseCode() >= 300) console.warn(`ntfy に送れませんでした（${res.getResponseCode()}）`, res.getContentText());

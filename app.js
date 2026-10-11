@@ -5,6 +5,7 @@ import * as store from './store.js?v=29';
 import * as D from './dates.js?v=29';
 import * as form from './form.js?v=29';
 import * as convert from './convert.js?v=29';
+import * as notify from './notify.js?v=29';
 import { h, $ } from './dom.js?v=29';
 
 const KEY_VIEW = 'oc.view';
@@ -78,7 +79,8 @@ function init() {
   }
 
   showApp();
-  refresh({ reloadCalendars: true }).then(resumeAfterLogin);
+  refresh({ reloadCalendars: true }).then(resumeAfterLogin)
+    .then(() => notify.resendIfNeeded()).catch((err) => console.warn(err));
 
   setInterval(poll, POLL_MS);
   document.addEventListener('visibilitychange', () => {
@@ -677,6 +679,7 @@ function handleSaveError(err) {
 
 function openSettings() {
   renderOwnerSeg();
+  renderPush();
   const email = auth.getEmail();
   $('#menu-account').textContent = email ? `ログイン中: ${email}` : '';
   $('#menu-calendars').replaceChildren(...store.calendars.map((c) => h('li', {},
@@ -707,6 +710,41 @@ function renderOwnerSeg() {
       render(); // 並び順を変える
     },
   }, text)));
+}
+
+// 通知の受け取り（このデバイス）。通知の中継が設定されていなければ出さない
+async function renderPush(message = '') {
+  const section = $('#push-section');
+  section.hidden = !notify.isConfigured();
+  if (section.hidden) return;
+  const btn = $('#push-btn');
+  const st = await notify.status();
+  const texts = {
+    unsupported: 'この画面では通知を使えません。iPhoneでは、ホーム画面に追加したアプリから設定してください。',
+    denied: '通知が許可されていません。iPhoneの「設定」→「通知」→「カレンダー」から許可してください。',
+    on: 'このデバイスで通知を受け取っています（毎朝6時の予定と、相手が追加した予定）。',
+    off: '毎朝6時の予定と、相手が追加した予定を、このデバイスに通知します。',
+  };
+  $('#push-status').textContent = message || texts[st];
+  btn.hidden = st === 'unsupported' || st === 'denied';
+  btn.textContent = st === 'on' ? '通知の受け取りをやめる' : 'このデバイスで通知を受け取る';
+  btn.onclick = async () => {
+    btn.disabled = true;
+    try {
+      if (st === 'on') {
+        await notify.disable();
+        await renderPush('通知の受け取りをやめました。');
+      } else {
+        const person = await notify.enable();
+        const p = CONFIG.people[person];
+        await renderPush(`${p.icon} ${p.nickname || p.label}のデバイスとして、通知の受け取りを始めました。`);
+      }
+    } catch (err) {
+      await renderPush(err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  };
 }
 
 function logout() {

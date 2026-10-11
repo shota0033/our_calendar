@@ -11,6 +11,7 @@ const FILES = [
   'app.js',
   'form.js',
   'convert.js',
+  'notify.js',
   'dom.js',
   'auth.js',
   'api.js',
@@ -57,4 +58,25 @@ self.addEventListener('fetch', (event) => {
         .then((hit) => hit || (request.mode === 'navigate' ? caches.match('./') : undefined))
         .then((hit) => hit || Response.error())),
   );
+});
+
+// 通知（Web Push）。中継（worker/push.js）から { title, body, url } が届く
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data?.text() }; }
+  event.waitUntil(self.registration.showNotification(data.title || 'カレンダー', {
+    body: data.body || '',
+    icon: 'icons/icon-192.png',
+    data: { url: data.url || './' },
+  }));
+});
+
+// 通知をタップしたら、開いているアプリを前に出す（なければ開く）
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const list = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (list.length) return list[0].focus();
+    return self.clients.openWindow(event.notification.data?.url || './');
+  })());
 });
