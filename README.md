@@ -21,6 +21,7 @@
 | `config.js` | **設定（クライアントID、猫と魚のカレンダー、色と名前）** |
 | `privacy.html` | プライバシーポリシー（Googleのブランディング設定用） |
 | `sw.js` / `manifest.webmanifest` / `icons/` | PWA用のファイル |
+| `gas/` | 通知（毎朝の予定・相手が追加した予定）。Google Apps Script で動かす。設定は `gas/README.md` |
 
 ## ログインのしくみ
 
