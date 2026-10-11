@@ -408,6 +408,10 @@ main { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 /* 相手が入れた予定のお知らせ：時刻の欄に日付と時刻を2行で出す */
 .news-row .time { white-space: pre-line; }
 #news-events { max-height: 55vh; overflow-y: auto; }
+.news-row.deleted { cursor: default; }
+.news-row.deleted:active, .news-row.deleted:hover { background: none; }
+.news-row.deleted .name { text-decoration: line-through; opacity: 0.6; }
+.news-heading { font-size: 13px; color: var(--muted); margin: 8px 0 2px; }
 
 /* ---------- 追加ボタン ---------- */
 .fab {

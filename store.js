@@ -1,7 +1,7 @@
 // カレンダーと予定の読み込み・保存、オフライン用のキャッシュ
-import { CONFIG } from './config.js?v=31';
-import * as api from './api.js?v=31';
-import * as D from './dates.js?v=31';
+import { CONFIG } from './config.js?v=32';
+import * as api from './api.js?v=32';
+import * as D from './dates.js?v=32';
 
 // キャッシュの形式を変えたら CACHE_SCHEMA を上げる。古い形式のキャッシュは読まずに捨てる
 // （古い形式の予定を表示しようとして画面が止まるのを防ぐため）。
@@ -139,23 +139,30 @@ function isHiddenEvent(ev, cal) {
 
 /* ---------- 相手が入れた予定 ---------- */
 
-// sinceMs 以降に、me でない人のカレンダーに追加された予定（アプリ以外から入ったものも含む）。
-// プッシュ通知（gas/notify.gs）と同じく、アプリの「書き換え」でできた予定・非表示の印・変換済みの印・
-// 繰り返しの予定の1回分の変更は除き、タスクは me が対象のものだけにする
+// sinceMs 以降に、me でない人が追加・削除した予定。{ added, deleted }
+// 追加：相手のカレンダーに入った予定（アプリ以外から入ったものも含む）。プッシュ通知（gas/notify.gs）と同じく、
+//   アプリの「書き換え」でできた予定・非表示の印・変換済みの印・繰り返しの予定の1回分の変更は除く
+// 削除：相手のカレンダーにある、相手がアプリで削除したときの記録
+// どちらも、タスクは me が対象のものだけにする
 export async function findPartnerNews(sinceMs, me) {
   const targets = calendars.filter((c) => c.person && c.person !== me && !c.holiday);
-  const lists = await Promise.all(targets.map(async (cal) => {
+  const added = [];
+  const deleted = [];
+  await Promise.all(targets.map(async (cal) => {
     const items = await api.listUpdated(cal.id, new Date(sinceMs).toISOString());
-    return items
-      .filter((e) => {
-        const shared = e.extendedProperties?.shared || {};
-        return e.status !== 'cancelled' && e.start && e.created && Date.parse(e.created) >= sinceMs &&
-          !e.recurringEventId && !shared.ocSource && shared.ocHidden !== '1' && shared.ocConverted !== '1';
-      })
-      .map((e) => D.normalizeEvent(e, cal, PERSONS))
-      .filter((ev) => ev.kind !== 'task' || ev.persons.includes(me));
+    for (const e of items) {
+      const shared = e.extendedProperties?.shared || {};
+      if (e.status === 'cancelled' || !e.start || !e.created || Date.parse(e.created) < sinceMs) continue;
+      if (shared.ocDelLog === '1') {
+        const ev = eventFromDeletionLog(e, cal);
+        if (ev.by !== me && ev.startKey) deleted.push(ev);
+      } else if (!e.recurringEventId && !shared.ocSource && shared.ocHidden !== '1' && shared.ocConverted !== '1') {
+        added.push(D.normalizeEvent(e, cal, PERSONS));
+      }
+    }
   }));
-  return sortEvents(lists.flat());
+  const forMe = (ev) => ev.kind !== 'task' || ev.persons.includes(me);
+  return { added: sortEvents(added.filter(forMe)), deleted: sortEvents(deleted.filter(forMe)) };
 }
 
 /* ---------- Googleの予定をアプリ形式に変換（一度だけ使う） ---------- */
@@ -382,9 +389,76 @@ async function insertHiddenMarker(source) {
 export async function deleteEvent(ev) {
   if (!editsInPlace(ev)) {
     await insertHiddenMarker(D.sourceKey(ev.calendarId, ev.id));
-    return;
+  } else {
+    // 先に印を作ってから消す（途中で失敗しても、元の予定が二重に出ないように）
+    if (ev.source) await insertHiddenMarker(ev.source);
+    await api.deleteEvent(ev.calendarId, ev.id);
   }
-  // 先に印を作ってから消す（途中で失敗しても、元の予定が二重に出ないように）
-  if (ev.source) await insertHiddenMarker(ev.source);
-  await api.deleteEvent(ev.calendarId, ev.id);
+  // 相手に知らせるための記録。残せなくても、削除そのものは済んでいるので止めない
+  await insertDeletionLog(ev).catch((err) => console.warn('削除の記録を残せませんでした', err));
+}
+
+/* ---------- 削除の記録 ---------- */
+
+// 削除した予定の中身と、削除した人を、削除した人のカレンダーに残す。
+// GAS（gas/notify.gs）がこれを見て相手にプッシュ通知し、相手のアプリは開いたときに知らせる。
+// ocHidden を付けて、アプリの表示や「追加された予定」には出さない（2000年1月1日に目立たない形で入る）
+const LOG_KEEP_MS = 14 * 24 * 60 * 60 * 1000;
+
+async function insertDeletionLog(ev) {
+  const cal = requireSaveCalendar();
+  await api.insertEvent(cal.id, {
+    summary: 'our_calendar：削除の記録（削除しないでください）',
+    start: { date: '2000-01-01' },
+    end: { date: '2000-01-02' },
+    transparency: 'transparent',
+    extendedProperties: { shared: {
+      ocHidden: '1',
+      ocDelLog: '1',
+      ocDelBy: selfPerson() || cal.person || '',
+      ocDelTitle: ev.title.slice(0, 500),
+      ocDelKind: ev.kind,
+      ocDelPersons: ev.persons.join(','),
+      ocDelStart: ev.startKey,
+      ocDelEnd: ev.endKey,
+      ocDelAllDay: ev.allDay ? '1' : '0',
+      ocDelStartTime: ev.startTime,
+      ocDelEndTime: ev.endTime,
+      ocDelTimeMode: ev.timeMode,
+    } },
+  });
+}
+
+// 削除の記録から、表示に使う予定の形を作る（app.js の timeText などがそのまま使える形）
+export function eventFromDeletionLog(raw, cal) {
+  const s = raw.extendedProperties?.shared || {};
+  return {
+    id: raw.id,
+    calendarId: cal.id,
+    title: s.ocDelTitle || '（タイトルなし）',
+    kind: s.ocDelKind === 'task' ? 'task' : 'event',
+    done: false,
+    persons: (s.ocDelPersons || '').split(',').filter((p) => PERSONS.includes(p)),
+    startKey: s.ocDelStart,
+    endKey: s.ocDelEnd || s.ocDelStart,
+    allDay: s.ocDelAllDay === '1',
+    startTime: s.ocDelStartTime || '',
+    endTime: s.ocDelEndTime || '',
+    timeMode: s.ocDelTimeMode || 'none',
+    startMs: 0,
+    by: PERSONS.includes(s.ocDelBy) ? s.ocDelBy : cal.person,
+    deleted: true,
+  };
+}
+
+// 自分のカレンダーの古い削除の記録を片付ける（2週間より前のもの）
+export async function cleanDeletionLogs() {
+  const cal = saveCalendar();
+  if (!cal) return;
+  const logs = await api.listDeletionLogs(cal.id);
+  for (const e of logs) {
+    if (e.status !== 'cancelled' && Date.now() - Date.parse(e.created) > LOG_KEEP_MS) {
+      await api.deleteEvent(cal.id, e.id);
+    }
+  }
 }

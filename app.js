@@ -1,12 +1,12 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=31';
-import * as auth from './auth.js?v=31';
-import * as store from './store.js?v=31';
-import * as D from './dates.js?v=31';
-import * as form from './form.js?v=31';
-import * as convert from './convert.js?v=31';
-import * as notify from './notify.js?v=31';
-import { h, $ } from './dom.js?v=31';
+import { CONFIG } from './config.js?v=32';
+import * as auth from './auth.js?v=32';
+import * as store from './store.js?v=32';
+import * as D from './dates.js?v=32';
+import * as form from './form.js?v=32';
+import * as convert from './convert.js?v=32';
+import * as notify from './notify.js?v=32';
+import { h, $ } from './dom.js?v=32';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -81,7 +81,7 @@ function init() {
 
   showApp();
   refresh({ reloadCalendars: true }).then(resumeAfterLogin)
-    .then(() => { checkPartnerNews(); return notify.resendIfNeeded(); }).catch((err) => console.warn(err));
+    .then(() => { checkPartnerNews(); cleanLogsDaily(); return notify.resendIfNeeded(); }).catch((err) => console.warn(err));
 
   setInterval(poll, POLL_MS);
   document.addEventListener('visibilitychange', () => {
@@ -126,7 +126,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=31').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=32').catch((err) => console.warn(err));
   }
 }
 
@@ -629,9 +629,9 @@ async function checkPartnerNews() {
   if (!since) { save(KEY_NEWS_SEEN, now); return; }
   newsBusy = true;
   try {
-    const events = await store.findPartnerNews(since, me);
+    const news = await store.findPartnerNews(since, me);
     save(KEY_NEWS_SEEN, now);
-    if (events.length && !document.querySelector('dialog[open]')) showNews(events);
+    if ((news.added.length || news.deleted.length) && !document.querySelector('dialog[open]')) showNews(me, news);
   } catch (err) {
     console.warn('相手が入れた予定を確かめられませんでした', err);
   } finally {
@@ -639,23 +639,49 @@ async function checkPartnerNews() {
   }
 }
 
-function showNews(events) {
-  const by = store.calendarById(events[0].calendarId)?.person;
-  const p = CONFIG.people[by];
-  const what = events.every((ev) => ev.kind === 'task') ? 'タスク' : '予定';
-  $('#news-title').textContent =
-    `${p.icon} ${p.nickname || p.label}が${what}を${events.length > 1 ? `${events.length}件` : ''}入れました`;
-  $('#news-events').replaceChildren(...events.map((ev) => h('button', {
-    class: 'event-row news-row',
-    type: 'button',
-    onclick: () => showNewsDay(ev.startKey),
-  },
-  h('i', { class: 'bar', style: { background: eventColor(ev) } }),
-  h('span', { class: 'time' }, `${D.formatShort(ev.startKey)}（${D.WEEKDAYS[D.weekday(ev.startKey)]}）\n${timeText(ev)}`),
-  h('span', { class: 'body' },
-    h('span', { class: 'name' }, displayTitle(ev)),
-    h('span', { class: 'cal' }, personIcons(ev))))));
+// 例：「🐟 にゃんちゃんが予定を2件入れました」「…が予定を削除しました」「…が予定を追加・削除しました」
+function showNews(me, { added, deleted }) {
+  const partner = store.PERSONS.find((p) => p !== me);
+  const p = CONFIG.people[partner];
+  const name = `${p.icon} ${p.nickname || p.label}`;
+  const all = [...added, ...deleted];
+  const what = all.every((ev) => ev.kind === 'task') ? 'タスク' : '予定';
+  const count = all.length > 1 ? `${all.length}件` : '';
+  let title;
+  if (!deleted.length) title = `${name}が${what}を${count}入れました`;
+  else if (!added.length) title = `${name}が${what}を${count}削除しました`;
+  else title = `${name}が${what}を追加・削除しました`;
+  $('#news-title').textContent = title;
+
+  const row = (ev) => {
+    const parts = [
+      h('i', { class: 'bar', style: { background: eventColor(ev) } }),
+      h('span', { class: 'time' }, `${D.formatShort(ev.startKey)}（${D.WEEKDAYS[D.weekday(ev.startKey)]}）\n${timeText(ev)}`),
+      h('span', { class: 'body' },
+        h('span', { class: 'name' }, displayTitle(ev)),
+        h('span', { class: 'cal' }, personIcons(ev))),
+    ];
+    // 削除した予定は取り消し線で出し、タップしても何もしない
+    if (ev.deleted) return h('div', { class: 'event-row news-row deleted' }, parts);
+    return h('button', { class: 'event-row news-row', type: 'button', onclick: () => showNewsDay(ev.startKey) }, parts);
+  };
+  const both = added.length && deleted.length;
+  $('#news-events').replaceChildren(
+    both ? h('h3', { class: 'news-heading' }, '追加') : null,
+    ...added.map(row),
+    both ? h('h3', { class: 'news-heading' }, '削除') : null,
+    ...deleted.map(row),
+  );
   $('#news-dialog').showModal();
+}
+
+// 自分のカレンダーの古い削除の記録を、1日に1回片付ける
+const KEY_LOGS_CLEANED = 'oc.logsCleanedAt';
+function cleanLogsDaily() {
+  if (!auth.getToken() || !navigator.onLine || Date.now() - (load(KEY_LOGS_CLEANED) || 0) < 24 * 60 * 60 * 1000) return;
+  store.cleanDeletionLogs()
+    .then(() => save(KEY_LOGS_CLEANED, Date.now()))
+    .catch((err) => console.warn('古い削除の記録を片付けられませんでした', err));
 }
 
 // お知らせの予定をタップしたら、その日の月のカレンダーに移って、その日の予定を開く

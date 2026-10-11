@@ -1,5 +1,5 @@
 // Google Calendar API の呼び出し
-import { getToken, invalidateToken } from './auth.js?v=31';
+import { getToken, invalidateToken } from './auth.js?v=32';
 
 const BASE = 'https://www.googleapis.com/calendar/v3';
 
@@ -91,6 +91,14 @@ export function listUpdated(calendarId, updatedMin) {
     updatedMin,
     showDeleted: 'false',
     maxResults: 250,
+  });
+}
+
+// アプリで予定を削除したときの「削除の記録」（ocDelLog=1）をすべて取得する
+export function listDeletionLogs(calendarId) {
+  return listAll(`/calendars/${encodeURIComponent(calendarId)}/events`, {
+    sharedExtendedProperty: 'ocDelLog=1',
+    maxResults: 2500,
   });
 }
 

@@ -1,7 +1,8 @@
 // our_calendar の通知（Google Apps Script）。
 // 5分ごとに動き、次の2つを ntfy（スマホの通知アプリ）に送る。
 //   1. 毎朝6時：今日の全員の予定と、自分のタスク（期限の5日前・2日前・1日前・当日）
-//   2. 相手が予定を追加したとき：もう1人に知らせる（タスクは、対象の人にだけ）
+//   2. 相手が予定を追加・削除したとき：もう1人に知らせる（タスクは、対象の人にだけ）
+//      削除は、アプリで削除したときに削除した人のカレンダーに残る「削除の記録」（ocDelLog）で知る
 // 設定のしかたは gas/README.md を参照。
 // 送り先は、公開しないよう「スクリプト プロパティ」に入れる（どちらか、または両方）：
 //   PUSH_URL, PUSH_SECRET … カレンダーのアプリへの通知（worker/push.js の URL と合言葉）。タップするとアプリが開く
@@ -280,7 +281,10 @@ function checkNewEvents() {
       throw err;
     }
     for (const raw of changed.items) {
-      if (isNewEvent(raw, notified, now)) {
+      if (isDeletionLog(raw, notified, now)) {
+        notified[raw.id] = now;
+        notifyDeleted(raw, cal);
+      } else if (isNewEvent(raw, notified, now)) {
         notified[raw.id] = now;
         notifyNewEvent(normalize(raw, cal));
       }
@@ -334,6 +338,41 @@ function notifyNewEvent(ev) {
     ? `${formatDay(ev.endKey)}${ev.allDay ? '' : ` ${ev.startTime}`}まで`
     : `${formatDay(ev.startKey)} ${timeText(ev)}`;
   const title = `${PEOPLE[by].icon} ${PEOPLE[by].nickname}が${ev.kind === 'task' ? 'タスク' : '予定'}を追加しました`;
+  for (const p of to) send(p, title, `${when}\n${who} ${ev.title}`);
+}
+
+/* ---------- 相手が予定を削除したときの通知 ---------- */
+
+// 新しくできた「削除の記録」か（アプリの store.js の insertDeletionLog が作る）
+function isDeletionLog(raw, notified, now) {
+  const shared = raw.extendedProperties?.shared || {};
+  if (raw.status === 'cancelled' || shared.ocDelLog !== '1' || !raw.created || notified[raw.id]) return false;
+  return now - new Date(raw.created).getTime() < NEW_EVENT_WINDOW_MS;
+}
+
+// 削除した人でないほうへ知らせる（タスクは、対象の人のうち削除した人でない人へ）
+function notifyDeleted(raw, cal) {
+  const s = raw.extendedProperties.shared;
+  const by = PERSONS.includes(s.ocDelBy) ? s.ocDelBy : cal.person;
+  const ev = {
+    title: s.ocDelTitle || '（タイトルなし）',
+    kind: s.ocDelKind === 'task' ? 'task' : 'event',
+    persons: (s.ocDelPersons || '').split(',').filter((p) => PERSONS.includes(p)),
+    startKey: s.ocDelStart,
+    endKey: s.ocDelEnd || s.ocDelStart,
+    allDay: s.ocDelAllDay === '1',
+    startTime: s.ocDelStartTime || '',
+    endTime: s.ocDelEndTime || '',
+    timeMode: s.ocDelTimeMode || 'none',
+  };
+  if (!by || !ev.startKey) return;
+  const to = PERSONS.filter((p) => p !== by && (ev.kind === 'event' || ev.persons.includes(p)));
+  if (!to.length) return;
+  const who = ev.persons.map((p) => PEOPLE[p].icon).join('');
+  const when = ev.kind === 'task'
+    ? `${formatDay(ev.endKey)}${ev.allDay ? '' : ` ${ev.startTime}`}まで`
+    : `${formatDay(ev.startKey)} ${timeText(ev)}`;
+  const title = `${PEOPLE[by].icon} ${PEOPLE[by].nickname}が${ev.kind === 'task' ? 'タスク' : '予定'}を削除しました`;
   for (const p of to) send(p, title, `${when}\n${who} ${ev.title}`);
 }
 
