@@ -8,8 +8,7 @@
 
 ### 公開状況
 - 公開URL：https://shota0033.github.io/our_calendar/
-- GitHubにあるのは v29（年のカレンダー）
-- 手元に v30（通知の受け取り。gas/ と worker/ を含む）。まだ送っていない
+- GitHubにあるのは v30（通知の受け取り。gas/ と worker/ を含む）
 - GitHubへの送信はClaudeが `git push` で行う。ただし、ユーザーが「送って」と言ったときだけ（2026-10-09〜）
   - それまでは手元でコミットまでにとどめる
   - 送ったあと、GitHub Pages の更新が終わり、公開ページの版番号が上がったことを確認する
