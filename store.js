@@ -1,7 +1,7 @@
 // カレンダーと予定の読み込み・保存、オフライン用のキャッシュ
-import { CONFIG } from './config.js?v=32';
-import * as api from './api.js?v=32';
-import * as D from './dates.js?v=32';
+import { CONFIG } from './config.js?v=33';
+import * as api from './api.js?v=33';
+import * as D from './dates.js?v=33';
 
 // キャッシュの形式を変えたら CACHE_SCHEMA を上げる。古い形式のキャッシュは読まずに捨てる
 // （古い形式の予定を表示しようとして画面が止まるのを防ぐため）。
@@ -163,30 +163,6 @@ export async function findPartnerNews(sinceMs, me) {
   }));
   const forMe = (ev) => ev.kind !== 'task' || ev.persons.includes(me);
   return { added: sortEvents(added.filter(forMe)), deleted: sortEvents(deleted.filter(forMe)) };
-}
-
-/* ---------- Googleの予定をアプリ形式に変換（一度だけ使う） ---------- */
-
-// 変換の候補：fromKey 以降（toKey まで）の、アプリ形式でも変換済みでもないGoogleの予定（祝日を除く）
-export async function findConvertCandidates(fromKey, toKey) {
-  const timeMin = D.startOfDayIso(fromKey);
-  const timeMax = D.startOfDayIso(toKey);
-  const lists = await Promise.all(calendars.filter((c) => !c.holiday).map(async (cal) => {
-    const items = await api.listEvents(cal.id, timeMin, timeMax, CONFIG.timeZone);
-    return items
-      .filter((e) => e.status !== 'cancelled' && e.start)
-      .map((raw) => D.normalizeEvent(raw, cal, PERSONS))
-      .filter((ev) => !ev.appFormat && !ev.converted && !ev.marker && !overridden.has(D.sourceKey(cal.id, ev.id)));
-  }));
-  return sortEvents(lists.flat());
-}
-
-// 1件を変換する：新しいアプリ形式の予定を作り、元の予定には「変換済み」の印だけを付ける（削除しない）
-export async function convertOne(original, fields) {
-  await saveEvent(fields, null);
-  await api.patchEvent(original.calendarId, original.id, {
-    extendedProperties: { shared: { ocConverted: '1' } },
-  });
 }
 
 // 直近の読み込みで失敗したカレンダー（画面に知らせるため）

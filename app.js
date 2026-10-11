@@ -1,12 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=32';
-import * as auth from './auth.js?v=32';
-import * as store from './store.js?v=32';
-import * as D from './dates.js?v=32';
-import * as form from './form.js?v=32';
-import * as convert from './convert.js?v=32';
-import * as notify from './notify.js?v=32';
-import { h, $ } from './dom.js?v=32';
+import { CONFIG } from './config.js?v=33';
+import * as auth from './auth.js?v=33';
+import * as store from './store.js?v=33';
+import * as D from './dates.js?v=33';
+import * as form from './form.js?v=33';
+import * as notify from './notify.js?v=33';
+import { h, $ } from './dom.js?v=33';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -66,7 +65,6 @@ function init() {
   restoreView();
   bindUi();
   form.initForm({ onSaved: showSaved, onSaveError: handleSaveError });
-  convert.initConvert({ onDone: () => refresh() });
   registerServiceWorker();
 
   if (CONFIG.clientId.startsWith('YOUR_')) {
@@ -126,7 +124,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=32').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=33').catch((err) => console.warn(err));
   }
 }
 
@@ -888,13 +886,6 @@ function bindUi() {
   $('#settings-btn').addEventListener('click', openSettings);
   $('#reload-btn').addEventListener('click', () => { $('#settings-dialog').close(); refresh({ reloadCalendars: true }); });
   $('#logout-btn').addEventListener('click', logout);
-  $('#convert-btn').addEventListener('click', () => {
-    $('#settings-dialog').close();
-    if (state.offline || !navigator.onLine) return;
-    // 変換の途中でトークンが切れないよう、残りが短ければ先に取り直す
-    if (auth.remainingMs() < REFRESH_BEFORE_EDIT_MS && redirectForToken()) return;
-    convert.openConvert();
-  });
 
   for (const btn of document.querySelectorAll('[data-close]')) {
     btn.addEventListener('click', () => btn.closest('dialog').close());

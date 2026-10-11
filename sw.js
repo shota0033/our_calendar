@@ -1,7 +1,7 @@
 // アプリ本体のファイルをキャッシュして、オフラインでも起動できるようにする。
 // 予定のデータ（Google API）はここでは扱わない（store.js がブラウザ内に保存する）。
 // ファイルを更新したら VERSION を上げる。
-const VERSION = 'v32';
+const VERSION = 'v33';
 const CACHE = `our-calendar-${VERSION}`;
 const FILES = [
   './',
@@ -10,7 +10,6 @@ const FILES = [
   'styles.css',
   'app.js',
   'form.js',
-  'convert.js',
   'notify.js',
   'dom.js',
   'auth.js',
