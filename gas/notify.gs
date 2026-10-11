@@ -1,15 +1,13 @@
 // our_calendar の通知（Google Apps Script）。
-// 5分ごとに動き、次の2つを ntfy（スマホの通知アプリ）に送る。
+// 5分ごとに動き、次の2つをカレンダーのアプリに通知する（通知の中継 worker/push.js を通す）。
 //   1. 毎朝6時：今日の全員の予定と、自分のタスク（期限の5日前・2日前・1日前・当日）
 //   2. 相手が予定を追加・削除したとき：もう1人に知らせる（タスクは、対象の人にだけ）
 //      削除は、アプリで削除したときに削除した人のカレンダーに残る「削除の記録」（ocDelLog）で知る
 // 設定のしかたは gas/README.md を参照。
-// 送り先は、公開しないよう「スクリプト プロパティ」に入れる（どちらか、または両方）：
-//   PUSH_URL, PUSH_SECRET … カレンダーのアプリへの通知（worker/push.js の URL と合言葉）。タップするとアプリが開く
-//   TOPIC_cat, TOPIC_fish … ntfy の受け取り先（🐱・🐟）。使わなくなったら消してよい
+// 送り先は、公開しないよう「スクリプト プロパティ」に入れる：
+//   PUSH_URL, PUSH_SECRET … 通知の中継（worker/push.js）の URL と合言葉
 
 const TZ = 'Asia/Tokyo';
-const NTFY_URL = 'https://ntfy.sh/';
 
 // 毎朝の通知の時刻（時）。この時刻から DAILY_UNTIL_HOUR 時までの間に1回だけ送る
 const DAILY_HOUR = 6;
@@ -52,8 +50,8 @@ function setup() {
     console.log(`${cal.person ? PEOPLE[cal.person].icon : '　'} ${cal.name}${cal.holiday ? '（祝日）' : ''}`);
   }
   const props = PropertiesService.getScriptProperties();
-  if (!(props.getProperty('PUSH_URL') && props.getProperty('PUSH_SECRET')) && !PERSONS.every(topicOf)) {
-    throw new Error('スクリプト プロパティに、PUSH_URL と PUSH_SECRET（または TOPIC_cat と TOPIC_fish）を入れてください');
+  if (!props.getProperty('PUSH_URL') || !props.getProperty('PUSH_SECRET')) {
+    throw new Error('スクリプト プロパティに、PUSH_URL と PUSH_SECRET を入れてください');
   }
   checkNewEvents(); // 最初は、今ある予定を覚えるだけ（通知しない）
   for (const p of PERSONS) send(p, '通知の設定ができました', `${PEOPLE[p].icon} ${PEOPLE[p].nickname}のスマホに届いています`);
@@ -376,51 +374,29 @@ function notifyDeleted(raw, cal) {
   for (const p of to) send(p, title, `${when}\n${who} ${ev.title}`);
 }
 
-/* ---------- 送る（アプリへの通知・ntfy） ---------- */
+/* ---------- 送る ---------- */
 
-function topicOf(person) {
-  return PropertiesService.getScriptProperties().getProperty(`TOPIC_${person}`);
-}
-
-// 片方の送り先に一時的につながらなくても、もう片方には送り、ほかの処理も止めない
-function send(person, title, message) {
-  for (const fn of [sendPush, sendNtfy]) {
-    try {
-      fn(person, title, message);
-    } catch (err) {
-      console.warn(`${PEOPLE[person].icon} 通知を送れませんでした`, err);
-    }
-  }
-}
-
-// カレンダーのアプリへの通知（worker/push.js に頼む）
-function sendPush(person, title, body) {
+// カレンダーのアプリへの通知（worker/push.js に頼む）。
+// 一時的につながらなくても、ほかの人への通知や、ほかの処理は止めない
+function send(person, title, body) {
   const props = PropertiesService.getScriptProperties();
   const url = props.getProperty('PUSH_URL');
   const secret = props.getProperty('PUSH_SECRET');
   if (!url || !secret) return;
-  const res = UrlFetchApp.fetch(`${url.replace(/\/+$/, '')}/send`, {
-    method: 'post',
-    contentType: 'application/json',
-    headers: { Authorization: `Bearer ${secret}` },
-    payload: JSON.stringify({ person, title, body }),
-    muteHttpExceptions: true,
-  });
-  const text = res.getContentText();
-  if (res.getResponseCode() >= 300) console.warn(`アプリへの通知を送れませんでした（${res.getResponseCode()}）`, text);
-  else console.log(`${PEOPLE[person].icon} アプリへの通知`, text);
-}
-
-function sendNtfy(person, title, message) {
-  const topic = topicOf(person);
-  if (!topic) return;
-  const res = UrlFetchApp.fetch(NTFY_URL, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({ topic, title, message }),
-    muteHttpExceptions: true,
-  });
-  if (res.getResponseCode() >= 300) console.warn(`ntfy に送れませんでした（${res.getResponseCode()}）`, res.getContentText());
+  try {
+    const res = UrlFetchApp.fetch(`${url.replace(/\/+$/, '')}/send`, {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { Authorization: `Bearer ${secret}` },
+      payload: JSON.stringify({ person, title, body }),
+      muteHttpExceptions: true,
+    });
+    const text = res.getContentText();
+    if (res.getResponseCode() >= 300) console.warn(`${PEOPLE[person].icon} 通知を送れませんでした（${res.getResponseCode()}）`, text);
+    else console.log(`${PEOPLE[person].icon} 通知`, text);
+  } catch (err) {
+    console.warn(`${PEOPLE[person].icon} 通知を送れませんでした`, err);
+  }
 }
 
 /* ---------- 日付（日本時間。'YYYY-MM-DD'） ---------- */
