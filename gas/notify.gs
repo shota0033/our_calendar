@@ -343,9 +343,15 @@ function topicOf(person) {
   return PropertiesService.getScriptProperties().getProperty(`TOPIC_${person}`);
 }
 
+// 片方の送り先に一時的につながらなくても、もう片方には送り、ほかの処理も止めない
 function send(person, title, message) {
-  sendPush(person, title, message);
-  sendNtfy(person, title, message);
+  for (const fn of [sendPush, sendNtfy]) {
+    try {
+      fn(person, title, message);
+    } catch (err) {
+      console.warn(`${PEOPLE[person].icon} 通知を送れませんでした`, err);
+    }
+  }
 }
 
 // カレンダーのアプリへの通知（worker/push.js に頼む）
