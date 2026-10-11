@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=28';
-import * as auth from './auth.js?v=28';
-import * as store from './store.js?v=28';
-import * as D from './dates.js?v=28';
-import * as form from './form.js?v=28';
-import * as convert from './convert.js?v=28';
-import { h, $ } from './dom.js?v=28';
+import { CONFIG } from './config.js?v=29';
+import * as auth from './auth.js?v=29';
+import * as store from './store.js?v=29';
+import * as D from './dates.js?v=29';
+import * as form from './form.js?v=29';
+import * as convert from './convert.js?v=29';
+import { h, $ } from './dom.js?v=29';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -23,6 +23,7 @@ const RESUME_TTL_MS = 30 * 60 * 1000;
 const state = {
   view: 'month',
   month: thisMonth(),
+  year: D.parts(D.todayKey()).y, // 年のカレンダーで表示中の年
   listDays: CONFIG.listDays,
   events: [],
   needsLogin: false,
@@ -108,18 +109,21 @@ function showApp() {
 function restoreView() {
   const saved = load(KEY_VIEW);
   if (!saved) return;
-  if (saved.view === 'month' || saved.view === 'list') state.view = saved.view;
-  // 表示中の月は、ログインで画面を離れた直後だけ復元する（普段は今月から）
-  if (saved.month && Date.now() - saved.savedAt < RESUME_TTL_MS) state.month = saved.month;
+  if (['month', 'year', 'list'].includes(saved.view)) state.view = saved.view;
+  // 表示中の月・年は、ログインで画面を離れた直後だけ復元する（普段は今月・今年から）
+  if (Date.now() - saved.savedAt < RESUME_TTL_MS) {
+    if (saved.month) state.month = saved.month;
+    if (saved.year) state.year = saved.year;
+  }
 }
 
 function saveView() {
-  save(KEY_VIEW, { view: state.view, month: state.month, savedAt: Date.now() });
+  save(KEY_VIEW, { view: state.view, month: state.month, year: state.year, savedAt: Date.now() });
 }
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=28').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=29').catch((err) => console.warn(err));
   }
 }
 
@@ -195,6 +199,7 @@ function currentRange() {
     const start = gridStart(state.month);
     return [start, D.addDays(start, 42)];
   }
+  if (state.view === 'year') return [D.monthKey(state.year, 1), D.monthKey(state.year + 1, 1)];
   const from = D.todayKey();
   return [from, D.addDays(from, state.listDays)];
 }
@@ -252,20 +257,26 @@ function setLoading(on) {
 function render() {
   renderChrome();
   if (state.view === 'month') renderMonth();
+  else if (state.view === 'year') renderYear();
   else renderList();
   if (dayDialogKey && $('#day-dialog').open) renderDayDialog(dayDialogKey);
 }
 
 function renderChrome() {
   const isMonth = state.view === 'month';
+  const isYear = state.view === 'year';
   if (isMonth) {
     const { y, m } = D.parts(state.month);
     $('#title').textContent = `${y}年${m}月`;
+  } else if (isYear) {
+    $('#title').textContent = `${state.year}年`;
   } else {
     $('#title').textContent = 'これからの予定';
   }
-  $('#prev-btn').hidden = !isMonth;
-  $('#next-btn').hidden = !isMonth;
+  $('#prev-btn').hidden = !isMonth && !isYear;
+  $('#next-btn').hidden = !isMonth && !isYear;
+  $('#prev-btn').setAttribute('aria-label', isYear ? '前の年' : '前の月');
+  $('#next-btn').setAttribute('aria-label', isYear ? '次の年' : '次の月');
   for (const btn of document.querySelectorAll('.view-seg button')) {
     btn.setAttribute('aria-selected', String(btn.dataset.view === state.view));
   }
@@ -273,7 +284,8 @@ function renderChrome() {
     btn.setAttribute('aria-pressed', String(state.filter.includes(btn.dataset.person)));
   }
   // 月の表示では「＋」ボタンを出さない（右下の日付が隠れるため）。日付をタップして「この日に予定を追加」から追加する
-  $('#add-btn').hidden = !canAdd() || isMonth;
+  // 年の表示でも出さない（日付をタップすると月の表示に移る）
+  $('#add-btn').hidden = !canAdd() || isMonth || isYear;
   renderBanner();
 }
 
@@ -471,6 +483,61 @@ function renderMonth(rowH) {
   }
 }
 
+/* ---------- 年のカレンダー ---------- */
+
+// 年のカレンダーで、その日に付ける色。予定（タスクを含む）のある人の色で、2人とも予定があれば紫。
+// 祝日など2人以外の予定と、完了したタスクは数えない
+function yearDayColor(events) {
+  const persons = new Set();
+  for (const ev of events) {
+    if (ev.kind === 'task' && ev.done) continue;
+    for (const p of ev.persons) persons.add(p);
+  }
+  if (persons.size > 1) return CONFIG.bothColor;
+  if (persons.size === 1) return CONFIG.people[[...persons][0]].color;
+  return null;
+}
+
+function renderYear() {
+  const top = $('#main').getBoundingClientRect().top + window.scrollY;
+  document.documentElement.style.setProperty('--month-top', `${Math.round(top)}px`);
+
+  const [from, to] = currentRange();
+  const byDay = groupByDay(visibleEvents(), from, to);
+  const today = D.todayKey();
+
+  const months = [];
+  for (let m = 1; m <= 12; m++) {
+    const first = D.monthKey(state.year, m);
+    const prefix = first.slice(0, 7);
+    const head = D.WEEKDAYS.map((w, i) =>
+      h('div', { class: `ywd ${i === 0 ? 'sun' : ''} ${i === 6 ? 'sat' : ''}` }, w));
+    // 月の初日の曜日まで空けて、その月の日だけを並べる
+    const days = Array.from({ length: D.weekday(first) }, () => h('div', { class: 'yd blank' }));
+    for (let key = first; key.startsWith(prefix); key = D.addDays(key, 1)) {
+      const events = byDay.get(key) || [];
+      const wd = D.weekday(key);
+      const color = yearDayColor(events);
+      const classes = ['yd'];
+      if (wd === 0 || events.some(isHolidayEvent)) classes.push('sun');
+      else if (wd === 6) classes.push('sat');
+      if (color) classes.push('has');
+      if (key === today) classes.push('today');
+      days.push(h('div', { class: classes.join(' '), style: color ? { '--c': color } : null }, D.parts(key).d));
+    }
+    // 月のどこをタップしても、その月のカレンダーに移る（日付のマスが小さいため）
+    months.push(h('div', { class: 'ym', onclick: () => openMonthFromYear(first) },
+      h('div', { class: `ym-title${prefix === today.slice(0, 7) ? ' current' : ''}` }, `${m}月`),
+      h('div', { class: 'ym-grid' }, head, days)));
+  }
+  $('#main').replaceChildren(h('div', { class: 'year' }, months));
+}
+
+function openMonthFromYear(monthKey) {
+  state.month = monthKey;
+  setView('month');
+}
+
 function timeText(ev) {
   const multi = ev.startKey !== ev.endKey;
   const sd = D.formatShort(ev.startKey);
@@ -655,10 +722,26 @@ function logout() {
 
 /* ---------- 操作の登録 ---------- */
 
+// 月の表示では月を、年の表示では年を移る
 function moveMonth(delta) {
-  const { y, m } = D.parts(state.month);
-  state.month = D.monthKey(y, m + delta);
+  if (state.view === 'year') {
+    state.year += delta;
+  } else {
+    const { y, m } = D.parts(state.month);
+    state.month = D.monthKey(y, m + delta);
+  }
   saveView();
+  refresh();
+}
+
+// 表示を切り替える。年の表示は、それまで見ていた月の年から始める
+// （年の表示で年を移っても state.month は変えないので、月の表示に戻るとさっきまで見ていた月が出る）
+function setView(view) {
+  if (state.view === view) return;
+  if (view === 'year') state.year = D.parts(state.month).y;
+  state.view = view;
+  saveView();
+  window.scrollTo({ top: 0 });
   refresh();
 }
 
@@ -675,13 +758,7 @@ function bindUi() {
     onclick: () => toggleFilter(p),
   }, CONFIG.people[p].icon)));
   for (const btn of document.querySelectorAll('.view-seg button')) {
-    btn.addEventListener('click', () => {
-      if (state.view === btn.dataset.view) return;
-      state.view = btn.dataset.view;
-      saveView();
-      window.scrollTo({ top: 0 });
-      refresh();
-    });
+    btn.addEventListener('click', () => setView(btn.dataset.view));
   }
   $('#add-btn').addEventListener('click', () => {
     const today = D.todayKey();
@@ -708,25 +785,62 @@ function bindUi() {
     dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
   }
 
-  // 月表示は左右のスワイプで月を移動
+  // 月・年の表示は左右のスワイプで月（年）を移動。
+  // 2本指を近づける（ピンチイン）と月 → 年、広げる（ピンチアウト）と年 → 月
+  const isCalendarView = () => state.view === 'month' || state.view === 'year';
+  const fingerDist = (ts) => Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY);
   let touch = null;
+  let pinch = null;
   $('#main').addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      touch = null; // ピンチのあとにスワイプとして扱わない
+      pinch = { dist: fingerDist(e.touches), done: false };
+      return;
+    }
+    if (e.touches.length > 2) { touch = null; pinch = null; return; }
     const t = e.touches[0];
     touch = { x: t.clientX, y: t.clientY };
   }, { passive: true });
+  $('#main').addEventListener('touchmove', (e) => {
+    if (!pinch || e.touches.length !== 2 || !isCalendarView()) return;
+    e.preventDefault(); // 画面そのものを拡大・縮小しない
+    if (pinch.done || !pinch.dist) return;
+    const ratio = fingerDist(e.touches) / pinch.dist;
+    if (state.view === 'month' && ratio < 0.75) { pinch.done = true; setView('year'); }
+    else if (state.view === 'year' && ratio > 1.35) { pinch.done = true; setView('month'); }
+  }, { passive: false });
   $('#main').addEventListener('touchend', (e) => {
-    if (!touch || state.view !== 'month') return;
+    if (e.touches.length === 0) pinch = null;
+    if (!touch || !isCalendarView()) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - touch.x;
     const dy = t.clientY - touch.y;
     touch = null;
     if (Math.abs(dx) > 60 && Math.abs(dy) < 40) moveMonth(dx < 0 ? 1 : -1);
   });
+  // iPhone の Safari は touchmove を止めても拡大することがあるので、ジェスチャーも止める
+  document.addEventListener('gesturestart', (e) => { if (isCalendarView()) e.preventDefault(); });
+
+  // パソコン：Ctrl＋マウスホイール（トラックパッドのピンチも同じ）で、月 ⇔ 年を切り替える
+  let wheelSum = 0;
+  let wheelTimer;
+  window.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey || !isCalendarView() || document.querySelector('dialog[open]')) return;
+    e.preventDefault(); // ブラウザの拡大・縮小をしない
+    wheelSum += e.deltaY;
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(() => { wheelSum = 0; }, 400);
+    if (state.view === 'month' && wheelSum > 40) { wheelSum = 0; setView('year'); }
+    else if (state.view === 'year' && wheelSum < -40) { wheelSum = 0; setView('month'); }
+  }, { passive: false });
 
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { if (state.view === 'month') renderMonth(); }, 150);
+    resizeTimer = setTimeout(() => {
+      if (state.view === 'month') renderMonth();
+      else if (state.view === 'year') renderYear();
+    }, 150);
   });
 }
 
