@@ -1,8 +1,8 @@
 // 通知の受け取り（Web Push）。設定画面の「このデバイスで通知を受け取る」から使う。
 // 受け取り先は通知の中継（worker/push.js、Cloudflare Workers）に登録し、GAS（gas/notify.gs）が送る。
 // iPhone では、ホーム画面に追加したアプリからだけ使える（iOS 16.4 以降）。
-import { CONFIG } from './config.js?v=34';
-import * as auth from './auth.js?v=34';
+import { CONFIG } from './config.js?v=35';
+import * as auth from './auth.js?v=35';
 
 const KEY_RESENT = 'oc.pushResent';
 const RESEND_MS = 24 * 60 * 60 * 1000;
