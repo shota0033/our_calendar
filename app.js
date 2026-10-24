@@ -1,11 +1,11 @@
 // 画面の表示と操作
-import { CONFIG } from './config.js?v=33';
-import * as auth from './auth.js?v=33';
-import * as store from './store.js?v=33';
-import * as D from './dates.js?v=33';
-import * as form from './form.js?v=33';
-import * as notify from './notify.js?v=33';
-import { h, $ } from './dom.js?v=33';
+import { CONFIG } from './config.js?v=34';
+import * as auth from './auth.js?v=34';
+import * as store from './store.js?v=34';
+import * as D from './dates.js?v=34';
+import * as form from './form.js?v=34';
+import * as notify from './notify.js?v=34';
+import { h, $ } from './dom.js?v=34';
 
 const KEY_VIEW = 'oc.view';
 const KEY_RESUME = 'oc.resume';
@@ -124,7 +124,7 @@ function saveView() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=33').catch((err) => console.warn(err));
+    navigator.serviceWorker.register('./sw.js?v=34').catch((err) => console.warn(err));
   }
 }
 

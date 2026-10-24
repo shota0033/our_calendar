@@ -1,6 +1,7 @@
 {
   "name": "Our Calendar",
   "short_name": "カレンダー",
+  "description": "2人で予定を共有するための個人用カレンダーアプリ。予定はGoogleカレンダーに保存します。",
   "lang": "ja",
   "start_url": "./",
   "scope": "./",
